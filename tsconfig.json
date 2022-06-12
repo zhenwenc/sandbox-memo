@@ -1,0 +1,22 @@
+{
+  "extends": "@navch/common",
+  "compilerOptions": {
+    "lib": ["ES2015", "es7", "esnext", "dom"],
+    "jsx": "preserve",
+    "target": "es6",
+    "noEmit": false,
+    "strict": false,
+    "allowJs": true,
+    "preserveConstEnums": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "baseUrl": ".",
+    "outDir": "build",
+    "paths": {
+      "@hooks/*": ["hooks/*"],
+      "@components/*": ["components/*"]
+    },
+    "forceConsistentCasingInFileNames": true
+  },
+  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx"]
+}

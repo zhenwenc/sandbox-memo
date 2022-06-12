@@ -1,0 +1,66 @@
+{
+  "private": true,
+  "name": "@private/memo",
+  "version": "1.0.0",
+  "license": "Apache license 2.0",
+  "author": {
+    "name": "Frederick Cai",
+    "url": "https://github.com/zhenwenc"
+  },
+  "scripts": {
+    "build": "tsc -b . && next build",
+    "start": "node build/server/app.js",
+    "start:dev": "next dev",
+    "build:web": "next build && next export -o dist",
+    "test": "jest --verbose",
+    "test:dev": "yarn run test --forceExit --bail --runInBand",
+    "test:clean": "jest --clearCache",
+    "test:cover": "yarn run test --coverage",
+    "format": "prettier --write --list-different ."
+  },
+  "dependencies": {
+    "@digitalbazaar/http-digest-header": "2.0.0",
+    "@navch/codec": "0.7.5-next.28",
+    "@navch/common": "0.7.5-next.28",
+    "@navch/http": "0.7.5-next.28",
+    "bs58": "5.0.0",
+    "got": "11.8.2",
+    "ioredis": "4.28.0",
+    "morgan": "1.10.0",
+    "next": "11.0.1",
+    "ramda": "0.27.1",
+    "react": "17.0.2",
+    "react-dom": "17.0.2",
+    "tslib": "2.3.0",
+    "uuid": "8.3.2"
+  },
+  "devDependencies": {
+    "@navch/testing": "0.7.5-next.28",
+    "@navch/toolkit": "0.7.5-next.28",
+    "@types/bs58": "4.0.1",
+    "@types/got": "9.6.12",
+    "@types/ioredis": "4.26.6",
+    "@types/jsonwebtoken": "8.5.4",
+    "@types/morgan": "1.9.3",
+    "@types/ramda": "0.27.44",
+    "@types/react": "17.0.15",
+    "@types/react-dom": "17.0.11",
+    "@types/uuid": "8.3.1"
+  },
+  "resolutions": {
+    "@types/react": "17.0.15",
+    "@types/react-dom": "17.0.11"
+  },
+  "prettier": {
+    "arrowParens": "avoid",
+    "printWidth": 110,
+    "singleQuote": true,
+    "tabWidth": 2,
+    "trailingComma": "es5",
+    "quoteProps": "consistent"
+  },
+  "jest": {
+    "testEnvironment": "node",
+    "preset": "@navch/testing"
+  }
+}
