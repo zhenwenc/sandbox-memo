@@ -19,15 +19,18 @@ type StoredRecord = t.TypeOf<typeof StoredRecord>;
 const StoredRecord = t.type({ data: t.unknown });
 
 const receiveDidCommMessage = makeHandler({
-  route: '/webhook/mattr/events',
+  route: '/webhook/mattr/events/:uid?',
   method: 'POST',
-  input: { body: t.type({ event: t.unknown }) },
+  input: {
+    params: t.type({ uid: t.union([t.undefined, t.string]) }),
+    body: t.type({ event: t.unknown }),
+  },
   context: HandlerContext,
-  handle: async (_, body, { redis, logger, headers }) => {
-    const uid = uuid();
+  handle: async ({ uid }, body, { redis, logger, headers, path }) => {
+    const recordId = [uid ?? 'root', uuid()].join('_').toLowerCase();
     const { signature } = headers;
 
-    logger.info('[webhook] Received mattr event', { uid, body, signature });
+    logger.info('[webhook] Received mattr event', { recordId, path, body, signature });
     if (typeof signature !== 'string') {
       logger.error('Missing request signature');
       return 'Ok'; // silently
@@ -50,7 +53,7 @@ const receiveDidCommMessage = makeHandler({
 
     const record: StoredRecord = { data: { event: body.event } };
     const value = JSON.stringify(record);
-    await redis.set(uid, value, 'EX', 120);
+    await redis.set(recordId, value, 'EX', 120);
 
     return 'Ok';
   },
