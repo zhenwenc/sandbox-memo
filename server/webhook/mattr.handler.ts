@@ -1,39 +1,37 @@
 import * as t from 'io-ts';
 import * as R from 'ramda';
-import { v4 as uuid } from 'uuid';
 import Redis from 'ioredis';
+import Pusher from 'pusher';
 
 import { thread } from '@navch/common';
 import { instanceOf } from '@navch/codec';
 import { makeHandler, makeHandlers } from '@navch/http';
 
-export type HandlerContext = t.TypeOf<typeof HandlerContext>;
-export const HandlerContext = t.type({
-  /**
-   * The storage to persist the received data.
-   */
-  redis: instanceOf(Redis),
+import * as pusherRepo from '../subscription/pusher.repository';
+import * as pusherAdapter from '../subscription/pusher.adapter';
+
+const HandlerContext = t.type({
+  pusher: t.union([instanceOf(Pusher), t.null]),
+  pusherRedis: instanceOf(Redis),
 });
 
-type StoredRecord = t.TypeOf<typeof StoredRecord>;
-const StoredRecord = t.type({ data: t.unknown });
-
-const receiveDidCommMessage = makeHandler({
-  route: '/webhook/mattr/events/:uid?',
+const postWebhookEvent = makeHandler({
+  route: '/webhook/mattr/events/:channelId?',
   method: 'POST',
   input: {
-    params: t.type({ uid: t.union([t.undefined, t.string]) }),
+    params: t.type({ channelId: t.union([t.undefined, t.string]) }),
     body: t.type({ event: t.unknown }),
   },
   context: HandlerContext,
-  handle: async ({ uid }, body, { redis, logger, headers, path }) => {
-    const recordId = [uid ?? 'root', uuid()].join('_').toLowerCase();
+  handle: async ({ channelId }, body, { pusherRedis, pusher, logger, headers, path }) => {
     const { signature } = headers;
+    const successResponse = { status: 'Ok' };
+    logger.info('[webhook] Received mattr event', { path, body, signature });
 
-    logger.info('[webhook] Received mattr event', { recordId, path, body, signature });
+    // Parse and validate the HTTP signature
     if (typeof signature !== 'string') {
-      logger.error('Missing request signature');
-      return 'Ok'; // silently
+      logger.warn('Missing request signature');
+      return successResponse; // silently
     }
 
     // NOTE: The `http-digest-header` is written in native ESM format
@@ -49,14 +47,28 @@ const receiveDidCommMessage = makeHandler({
       R.fromPairs,
       R.mapObjIndexed(R.replace(/^\"?(.+?)\"?$/, '$1'))
     );
-    logger.info('[webhook] Parsed signature', signatureParams);
+    logger.debug('[webhook] Parsed signature', signatureParams);
 
-    const record: StoredRecord = { data: { event: body.event } };
-    const value = JSON.stringify(record);
-    await redis.set(recordId, value, 'EX', 120);
-
-    return 'Ok';
+    // Forward event to PubSub service if enabled
+    if (pusher && channelId) {
+      await pusherAdapter.publish(pusherRedis, pusher, {
+        channelId,
+        event: 'WEBHOOK_MATTR_EVENT',
+        data: { event: body.event },
+      });
+    }
+    return successResponse;
   },
 });
 
-export const handlers = makeHandlers(() => [receiveDidCommMessage]);
+const postChannelRegister = makeHandler({
+  route: '/webhook/mattr/channels',
+  method: 'POST',
+  context: HandlerContext,
+  handle: async (_1, _2, { pusherRedis, logger }) => {
+    logger.info('[webhook] Register pusher channel');
+    return await pusherRepo.upsert(pusherRedis);
+  },
+});
+
+export const handlers = makeHandlers(() => [postWebhookEvent, postChannelRegister]);

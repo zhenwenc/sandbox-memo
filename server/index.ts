@@ -8,6 +8,7 @@ import { makeRouter, middlewares, setRequestContext } from '@navch/http';
 import { AppConfig } from './config';
 import * as shorten from './shorten/handler';
 import * as webhookMattr from './webhook/mattr.handler';
+import * as pusherAdapter from './subscription/pusher.adapter';
 
 export function buildHandler() {
   const config = new AppConfig();
@@ -36,14 +37,15 @@ export function buildHandler() {
     router.use('/api', setContext, makeRouter(shorten.handlers()).routes());
   }
   {
-    const redis = new Redis(config.redisURI, {
-      keyPrefix: 'sandbox:memo:webhook:',
+    const pusherRedis = new Redis(config.redisURI, {
+      keyPrefix: 'sandbox:memo:pusher:',
       showFriendlyErrorStack: true,
       keepAlive: 5000,
       lazyConnect: true,
     });
+    const pusher = pusherAdapter.init(config);
     const setContext = setRequestContext(async () => {
-      return { logger, redis };
+      return { logger, pusher, pusherRedis };
     });
     router.use(middlewares.errorHandler({ logger, expose: true }));
     router.use('/api', setContext, makeRouter(webhookMattr.handlers()).routes());
