@@ -58,7 +58,7 @@ const postWebhookEvent = makeHandler({
       await pusherAdapter.publish(pusherRedis, pusher, {
         channelId,
         event: 'WEBHOOK_MATTR_EVENT',
-        data: { event: body.event },
+        data: { event: body.event, signature },
       });
     }
     return successResponse;
