@@ -1,5 +1,6 @@
 import * as t from 'io-ts';
 import * as R from 'ramda';
+import * as uuid from 'uuid';
 import Redis from 'ioredis';
 import Pusher from 'pusher';
 
@@ -26,19 +27,21 @@ const postWebhookEvent = makeHandler({
   handle: async ({ channelId }, body, { pusherRedis, pusher, logger, headers, path }) => {
     const { signature } = headers;
     const successResponse = { status: 'Ok' };
-    logger.info('[webhook] Received mattr event', { path, body, signature });
+    logger.info('Received mattr event', { path, body, signature });
 
     // Parse and validate the HTTP signature
+    //
     if (typeof signature !== 'string') {
-      logger.warn('Missing request signature');
+      logger.warn('Missing request signature, completing request');
       return successResponse; // silently
     }
 
-    // NOTE: The `http-digest-header` is written in native ESM format
+    // Verify signature with `http-digest-header`
     //
-    // const { verifyHeaderValue } = require('@digitalbazaar/http-digest-header');
-    // const verified = await verifyHeaderValue({ data: body, headerValue: signature });
-    // logger.info('Signature verification result', verified);
+    // @ts-ignore:next-line
+    const { verifyHeaderValue } = await import('@digitalbazaar/http-digest-header');
+    const verified = await verifyHeaderValue({ data: body, headerValue: signature });
+    logger.info('Verified http signature', verified);
 
     const signatureParams = thread(
       signature,
@@ -47,10 +50,11 @@ const postWebhookEvent = makeHandler({
       R.fromPairs,
       R.mapObjIndexed(R.replace(/^\"?(.+?)\"?$/, '$1'))
     );
-    logger.debug('[webhook] Parsed signature', signatureParams);
+    logger.debug('Parsed signature', signatureParams);
 
     // Forward event to PubSub service if enabled
-    if (pusher && channelId) {
+    //
+    if (pusher && channelId && uuid.validate(channelId)) {
       await pusherAdapter.publish(pusherRedis, pusher, {
         channelId,
         event: 'WEBHOOK_MATTR_EVENT',
@@ -66,7 +70,7 @@ const postChannelRegister = makeHandler({
   method: 'POST',
   context: HandlerContext,
   handle: async (_1, _2, { pusherRedis, logger }) => {
-    logger.info('[webhook] Register pusher channel');
+    logger.info('Register pusher channel');
     return await pusherRepo.upsert(pusherRedis);
   },
 });
