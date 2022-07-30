@@ -7,6 +7,7 @@
     "name": "Frederick Cai",
     "url": "https://github.com/zhenwenc"
   },
+  "type": "module",
   "scripts": {
     "build": "tsc -b . && next build",
     "start": "node build/server/app.js",
@@ -27,7 +28,7 @@
     "got": "11.8.2",
     "ioredis": "4.28.0",
     "morgan": "1.10.0",
-    "next": "11.0.1",
+    "next": "12.2.3",
     "pusher": "5.1.1-beta",
     "pusher-js": "7.3.0",
     "ramda": "0.27.1",

@@ -47,7 +47,7 @@ export function buildHandler() {
     const setContext = setRequestContext(async () => {
       return { logger, pusher, pusherRedis };
     });
-    router.use(middlewares.errorHandler({ logger, expose: true }));
+    router.use(middlewares.errorHandler({ logger: logger.child({ name: 'webhook' }), expose: true }));
     router.use('/api', setContext, makeRouter(webhookMattr.handlers()).routes());
   }
 

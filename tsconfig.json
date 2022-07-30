@@ -3,7 +3,8 @@
   "compilerOptions": {
     "lib": ["ES2015", "es7", "esnext", "dom"],
     "jsx": "preserve",
-    "target": "es6",
+    "module": "esnext",
+    "target": "esnext",
     "noEmit": false,
     "strict": false,
     "allowJs": true,
