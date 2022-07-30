@@ -21,9 +21,9 @@
   },
   "dependencies": {
     "@digitalbazaar/http-digest-header": "2.0.0",
-    "@navch/codec": "0.7.5-next.28",
-    "@navch/common": "0.7.5-next.28",
-    "@navch/http": "0.7.5-next.28",
+    "@navch/codec": "0.7.5-next.38",
+    "@navch/common": "0.7.5-next.38",
+    "@navch/http": "0.7.5-next.38",
     "bs58": "5.0.0",
     "got": "11.8.2",
     "ioredis": "4.28.0",
@@ -34,12 +34,12 @@
     "ramda": "0.27.1",
     "react": "17.0.2",
     "react-dom": "17.0.2",
-    "tslib": "2.3.0",
+    "tslib": "2.4.0",
     "uuid": "8.3.2"
   },
   "devDependencies": {
-    "@navch/testing": "0.7.5-next.28",
-    "@navch/toolkit": "0.7.5-next.28",
+    "@navch/testing": "0.7.5-next.38",
+    "@navch/toolkit": "0.7.5-next.38",
     "@types/bs58": "4.0.1",
     "@types/got": "9.6.12",
     "@types/ioredis": "4.26.6",
