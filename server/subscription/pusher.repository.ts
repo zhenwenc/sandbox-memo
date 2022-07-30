@@ -12,7 +12,7 @@ const PusherChannel = t.type({
 
 export async function upsert(redis: Redis): Promise<PusherChannel> {
   const record = validate({ id: uuid.v4(), createdAt: Date.now() }, PusherChannel);
-  await redis.set(record.id, JSON.stringify(record), 'EX', 3600);
+  await redis.set(record.id, JSON.stringify(record), 'EX', 3600 * 120); // 5 days
   return record;
 }
 
