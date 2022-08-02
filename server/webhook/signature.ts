@@ -68,7 +68,7 @@ export async function verifySignature(options: VerifySignatureOptions) {
     const verified = httpSignature.verifySignature(parsed, keyPubPem);
     logger.info('Verified http signature', { verified });
 
-    return { verified, reason: 'Invalid signature' };
+    return { verified, parsed, reason: 'Invalid signature' };
   } catch (err) {
     logger.error('Failed to verify http signature', err);
     return { verified: false, reason: err.message };
