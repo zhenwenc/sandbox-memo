@@ -8,7 +8,7 @@ import { AppConfig } from '../config';
 
 type EventKind = 'WEBHOOK_MATTR_EVENT';
 
-const ServiceLogger = new Logger({ name: 'subscription', prettyPrint: true });
+const ServiceLogger = new Logger({ name: 'subscription' });
 
 export class PusherPublishError extends AbstractError {
   readonly status = HttpStatus.BAD_REQUEST;

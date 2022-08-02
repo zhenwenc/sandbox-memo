@@ -1,15 +1,15 @@
 import * as t from 'io-ts';
-import * as R from 'ramda';
 import * as uuid from 'uuid';
 import Redis from 'ioredis';
 import Pusher from 'pusher';
 
-import { thread } from '@navch/common';
 import { instanceOf } from '@navch/codec';
 import { makeHandler, makeHandlers } from '@navch/http';
 
 import * as pusherRepo from '../subscription/pusher.repository';
 import * as pusherAdapter from '../subscription/pusher.adapter';
+
+import { verifySignature } from './signature';
 
 const HandlerContext = t.type({
   pusher: t.union([instanceOf(Pusher), t.null]),
@@ -29,45 +29,24 @@ const postWebhookEvent = makeHandler({
     const successResponse = { status: 'Ok' };
     logger.info('Received mattr event', { path, body, signature });
 
-    // Parse and validate the HTTP signature
-    //
-    if (typeof signature !== 'string') {
-      logger.warn('Missing request signature, completing request');
-      return successResponse; // silently
-    }
-
     // Verify signature with `http-digest-header`
     //
-    // @ts-ignore:next-line
-    const httpSignatureHeader = await import('@digitalbazaar/http-digest-header');
-    try {
-      const parsed = await httpSignatureHeader.parseSignatureHeader(signature);
-      logger.info('Parsed http signature @digitalbazaar', parsed);
-    } catch (err) {
-      logger.error('Failed to parse http signature @digitalbazaar', err);
-    }
+    // try {
+    //   // @ts-ignore:next-line
+    //   const httpSignature = await import('@digitalbazaar/http-digest-header');
+    //   const parsed = await httpSignature.parseSignatureHeader(signature);
+    //   logger.info('Parsed http signature with @digitalbazaar', parsed);
+    // } catch (err) {
+    //   logger.error('Failed to verify http signature with @digitalbazaar', err);
+    // }
 
-    // Verify signature with `http-signature`
+    // Verify HTTP signature if presented
     //
-    // @ts-ignore:next-line
-    const httpSignature = await import('http-signature');
-    try {
-      const parsed = httpSignature.parseRequest(req, {
-        authorizationHeaderName: 'signature',
-      });
-      logger.info('Parsed http signature', parsed);
-    } catch (err) {
-      logger.error('Failed to parse http signature', err);
+    const verifyResult = await verifySignature({ logger, request: req });
+    if (!verifyResult.verified) {
+      logger.warn('Failed to verify signature, completing request', verifyResult);
+      return successResponse; // always success silently
     }
-
-    const signatureParams = thread(
-      signature,
-      R.split(','),
-      R.map(v => v.split('=', 2) as [string, string]),
-      R.fromPairs,
-      R.mapObjIndexed(R.replace(/^\"?(.+?)\"?$/, '$1'))
-    );
-    logger.debug('Parsed signature', signatureParams);
 
     // Forward event to PubSub service if enabled
     //
@@ -75,7 +54,7 @@ const postWebhookEvent = makeHandler({
       await pusherAdapter.publish(pusherRedis, pusher, {
         channelId,
         event: 'WEBHOOK_MATTR_EVENT',
-        data: { event: body.event, signature },
+        data: { event: body.event, signature, verifyResult },
       });
     }
     return successResponse;

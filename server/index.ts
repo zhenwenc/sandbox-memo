@@ -12,7 +12,7 @@ import * as pusherAdapter from './subscription/pusher.adapter';
 
 export function buildHandler() {
   const config = new AppConfig();
-  const logger = new Logger({ name: 'memo', prettyPrint: !config.isProdEnv });
+  const logger = new Logger({ name: 'memo' });
 
   const requestLogger = morgan('dev', {
     stream: { write: compose(logger.debug, trim) },
