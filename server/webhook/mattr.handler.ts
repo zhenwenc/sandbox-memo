@@ -24,7 +24,7 @@ const postWebhookEvent = makeHandler({
     body: t.type({ event: t.unknown }),
   },
   context: HandlerContext,
-  handle: async ({ channelId }, body, { pusherRedis, pusher, logger, headers, path }) => {
+  handle: async ({ channelId }, body, { pusherRedis, pusher, logger, headers, path, req }) => {
     const { signature } = headers;
     const successResponse = { status: 'Ok' };
     logger.info('Received mattr event', { path, body, signature });
@@ -39,9 +39,26 @@ const postWebhookEvent = makeHandler({
     // Verify signature with `http-digest-header`
     //
     // @ts-ignore:next-line
-    const { verifyHeaderValue } = await import('@digitalbazaar/http-digest-header');
-    const verified = await verifyHeaderValue({ data: body, headerValue: signature });
-    logger.info('Verified http signature', verified);
+    const httpSignatureHeader = await import('@digitalbazaar/http-digest-header');
+    try {
+      const parsed = await httpSignatureHeader.parseSignatureHeader(signature);
+      logger.info('Parsed http signature @digitalbazaar', parsed);
+    } catch (err) {
+      logger.error('Failed to parse http signature @digitalbazaar', err);
+    }
+
+    // Verify signature with `http-signature`
+    //
+    // @ts-ignore:next-line
+    const httpSignature = await import('http-signature');
+    try {
+      const parsed = httpSignature.parseRequest(req, {
+        authorizationHeaderName: 'signature',
+      });
+      logger.info('Parsed http signature', parsed);
+    } catch (err) {
+      logger.error('Failed to parse http signature', err);
+    }
 
     const signatureParams = thread(
       signature,
