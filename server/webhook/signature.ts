@@ -32,8 +32,8 @@ export async function verifySignature(options: VerifySignatureOptions) {
     });
     logger.debug('Parsed http signature', parsed);
 
-    // TODO lookup keyId
-    const keyId = 'FdFYFzERwC2uCBB46pZQi4GG85LujR8obt-KWRBICVQ';
+    // Lookup key id from signature components
+    const keyId = parsed?.params?.keyId;
 
     const publicKey = JWKS.find(v => v.kid === keyId);
     if (!publicKey) {
