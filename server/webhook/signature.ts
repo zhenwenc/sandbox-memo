@@ -19,8 +19,16 @@ export type VerifySignatureOptions = {
   readonly logger: Logger;
   readonly request: IncomingMessage;
 };
-export async function verifySignature(options: VerifySignatureOptions) {
-  const { logger, request } = options;
+
+export type VerifyResult = {
+  readonly verified: boolean;
+  readonly reason: string;
+  readonly parsed?: Record<string, unknown>;
+};
+
+export async function verifySignature(options: VerifySignatureOptions): Promise<VerifyResult> {
+  const { request } = options;
+  const logger = options.logger.child({ name: 'Joyent scheme' });
 
   // The library doesn't provide type definitions :(
   // @ts-ignore:next-line
@@ -72,5 +80,31 @@ export async function verifySignature(options: VerifySignatureOptions) {
   } catch (err) {
     logger.error('Failed to verify http signature', err);
     return { verified: false, reason: err.message };
+  }
+}
+
+export async function verifySignatureDraft(options: VerifySignatureOptions) {
+  const { request } = options;
+  const logger = options.logger.child({ name: 'IETF draft scheme' });
+
+  const signature = `keyId="Test",algorithm="rsa-sha256",\ncreated=1402170695, expires=1402170699,\nheaders="(request-target) (created) (expires) host date content-type digest content-length",\nsignature="vSdrb+dS3EceC9bcwHSo4MlyKS59iFIrhgYkz8+oVLEEzmYZZvRs8rgOp+63LEM3v+MFHB32NfpB2bEKBIvB1q52LaEUHFv120V01IL+TAD48XaERZFukWgHoBTLMhYS2Gb51gWxpeIq8knRmPnYePbF5MOkR0Zkly4zKH7s1dE="`;
+
+  // The library doesn't provide type definitions :(
+  // @ts-ignore:next-line
+  const httpSignature = await import('@digitalbazaar/http-digest-header');
+
+  try {
+    const parsedSampleSignature = await await httpSignature.parseSignatureHeader(signature);
+    logger.info('------- parsedSampleSignature', parsedSampleSignature);
+
+    const parsed = await httpSignature.parseRequest(request, {
+      authorizationHeaderName: 'signature',
+    });
+    logger.debug('Parsed http signature', parsed);
+
+    // return { verified: false, parsed, reason: 'Invalid signature' };
+  } catch (err) {
+    logger.error('Failed to verify http signature', err);
+    // return { verified: false, reason: err.message };
   }
 }

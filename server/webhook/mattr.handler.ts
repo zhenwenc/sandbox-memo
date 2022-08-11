@@ -8,8 +8,7 @@ import { makeHandler, makeHandlers } from '@navch/http';
 
 import * as pusherRepo from '../subscription/pusher.repository';
 import * as pusherAdapter from '../subscription/pusher.adapter';
-
-import { verifySignature } from './signature';
+import * as signatures from './signature';
 
 const HandlerContext = t.type({
   pusher: t.union([instanceOf(Pusher), t.null]),
@@ -29,20 +28,13 @@ const postWebhookEvent = makeHandler({
     const successResponse = { status: 'Ok' };
     logger.info('Received mattr event', { path, body, signature });
 
-    // Verify signature with `http-digest-header`
+    // Verify signature against draft-cavage-http-signatures-12 scheme
     //
-    // try {
-    //   // @ts-ignore:next-line
-    //   const httpSignature = await import('@digitalbazaar/http-digest-header');
-    //   const parsed = await httpSignature.parseSignatureHeader(signature);
-    //   logger.info('Parsed http signature with @digitalbazaar', parsed);
-    // } catch (err) {
-    //   logger.error('Failed to verify http signature with @digitalbazaar', err);
-    // }
+    // await verifySignatureDraft({ logger, request: req });
 
-    // Verify HTTP signature if presented
+    // Verify signature against Joyent' scheme
     //
-    const verifyResult = await verifySignature({ logger, request: req });
+    const verifyResult = await signatures.verifySignature({ logger, request: req });
     if (!verifyResult.verified) {
       logger.warn('Failed to verify signature, completing request', verifyResult);
       return successResponse; // always success silently
