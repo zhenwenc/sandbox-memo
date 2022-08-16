@@ -21,26 +21,26 @@
   },
   "dependencies": {
     "@digitalbazaar/http-digest-header": "git+https://github.com/digitalbazaar/http-signature-header.git#9bc7f4956dd045325ccc31ae382c9ae5c2195710",
-    "@navch/codec": "0.7.5-next.38",
-    "@navch/common": "0.7.5-next.38",
-    "@navch/http": "0.7.5-next.38",
+    "@navch/codec": "0.7.5-next.52",
+    "@navch/common": "0.7.5-next.52",
+    "@navch/http": "0.7.5-next.52",
     "bs58": "5.0.0",
     "got": "11.8.2",
     "http-signature": "git+https://github.com/zhenwenc/node-http-signature.git#support-hs2019-algorithm",
     "ioredis": "4.28.0",
     "morgan": "1.10.0",
-    "next": "12.2.3",
+    "next": "12.2.5",
     "pusher": "5.1.1-beta",
     "pusher-js": "7.3.0",
     "ramda": "0.27.1",
-    "react": "17.0.2",
-    "react-dom": "17.0.2",
+    "react": "18.2.0",
+    "react-dom": "18.2.0",
     "tslib": "2.4.0",
     "uuid": "8.3.2"
   },
   "devDependencies": {
-    "@navch/testing": "0.7.5-next.38",
-    "@navch/toolkit": "0.7.5-next.38",
+    "@navch/testing": "0.7.5-next.52",
+    "@navch/toolkit": "0.7.5-next.52",
     "@types/bs58": "4.0.1",
     "@types/got": "9.6.12",
     "@types/ioredis": "4.26.6",
@@ -48,13 +48,13 @@
     "@types/morgan": "1.9.3",
     "@types/node": "18.6.3",
     "@types/ramda": "0.27.44",
-    "@types/react": "17.0.15",
-    "@types/react-dom": "17.0.11",
+    "@types/react": "18.0.17",
+    "@types/react-dom": "18.0.6",
     "@types/uuid": "8.3.1"
   },
   "resolutions": {
-    "@types/react": "17.0.15",
-    "@types/react-dom": "17.0.11"
+    "@types/react": "18.0.17",
+    "@types/react-dom": "18.0.6"
   },
   "prettier": {
     "arrowParens": "avoid",
