@@ -2,6 +2,8 @@ import * as t from 'io-ts';
 import got, { HTTPError } from 'got';
 import { URL } from 'url';
 
+import { MaybePromise, Logger } from '@navch/common';
+
 const NgrokResponse = t.type({
   tunnels: t.array(t.type({ proto: t.string, public_url: t.string })),
 });
@@ -29,4 +31,23 @@ export async function resolvePublicURL(url: string): Promise<string> {
   }
 
   return url;
+}
+
+type GracefulErrorHandler = (error: Error) => MaybePromise<void>;
+
+export async function graceful<T>(
+  p: MaybePromise<T>,
+  handler?: GracefulErrorHandler | Logger
+): Promise<T | undefined> {
+  try {
+    return await p;
+  } catch (err) {
+    if (handler instanceof Function) {
+      await handler(err);
+    } else {
+      const logger = handler || Logger;
+      logger.error('Graceful failure', { err });
+    }
+    return undefined;
+  }
 }

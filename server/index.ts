@@ -6,7 +6,8 @@ import { Logger } from '@navch/common';
 import { makeRouter, middlewares, setRequestContext } from '@navch/http';
 
 import { AppConfig } from './config';
-import * as shorten from './shorten/handler';
+import * as influxdbModule from './telemetry/influxdb';
+import * as shorten from './shorten/shorten.handler';
 import * as webhookMattr from './webhook/mattr.handler';
 import * as pusherAdapter from './subscription/pusher.adapter';
 
@@ -22,13 +23,24 @@ export function buildHandler() {
   router.use(setRequestContext({ logger }));
   router.use(middlewares.fromCallback(requestLogger));
 
-  {
-    const redis = new Redis(config.redisURI, {
+  const redis = {
+    shorten: new Redis(config.redisURI, {
       keyPrefix: 'sandbox:memo:shorten:',
       showFriendlyErrorStack: true,
       keepAlive: 5000,
       lazyConnect: true,
-    });
+    }),
+    pusher: new Redis(config.redisURI, {
+      keyPrefix: 'sandbox:memo:pusher:',
+      showFriendlyErrorStack: true,
+      keepAlive: 5000,
+      lazyConnect: true,
+    }),
+  };
+
+  const influxdb = new influxdbModule.InfluxClientPool();
+
+  {
     const setContext = setRequestContext(async () => {
       const publicURL = await config.publicURL;
       return { logger, publicURL, redis };
@@ -37,15 +49,9 @@ export function buildHandler() {
     router.use('/api', setContext, makeRouter(shorten.handlers()).routes());
   }
   {
-    const pusherRedis = new Redis(config.redisURI, {
-      keyPrefix: 'sandbox:memo:pusher:',
-      showFriendlyErrorStack: true,
-      keepAlive: 5000,
-      lazyConnect: true,
-    });
     const pusher = pusherAdapter.init(config);
     const setContext = setRequestContext(async () => {
-      return { logger, pusher, pusherRedis };
+      return { logger, pusher, redis, influxdb };
     });
     router.use(middlewares.errorHandler({ logger: logger.child({ name: 'webhook' }), expose: true }));
     router.use('/api', setContext, makeRouter(webhookMattr.handlers()).routes());

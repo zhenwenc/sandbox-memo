@@ -12,7 +12,7 @@ export const HandlerContext = t.type({
   /**
    * The storage to persist the shortened URLs.
    */
-  redis: instanceOf(Redis),
+  redis: t.type({ shorten: instanceOf(Redis) }),
 });
 
 type StoredRecord = t.TypeOf<typeof StoredRecord>;
@@ -40,7 +40,7 @@ const resolveShortenURL = makeHandler({
   },
   context: HandlerContext,
   handle: async ({ code }, _, ctx) => {
-    const value = await ctx.redis.get(code);
+    const value = await ctx.redis.shorten.get(code);
     if (!value) {
       throw new Error(`No shorten URL found with code: ${code}`);
     }
@@ -63,13 +63,13 @@ const createShortenURL = makeHandler({
     body: t.type({ long_url: t.string, payload: t.unknown }),
   },
   context: t.intersection([HandlerContext, t.type({ publicURL: t.string })]),
-  handle: async (_, { long_url, payload }, ctx) => {
+  handle: async (_, { long_url, payload }, { redis, publicURL }) => {
     const record: StoredRecord = { url: long_url, payload };
     const value = JSON.stringify(record);
 
     const code = hash(value);
-    const link = `${ctx.publicURL}/api/shorten/${code}`;
-    await ctx.redis.set(code, value, 'EX', 86400);
+    const link = `${publicURL}/api/shorten/${code}`;
+    await redis.shorten.set(code, value, 'EX', 86400);
 
     return { link };
   },
