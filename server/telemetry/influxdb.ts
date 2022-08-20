@@ -51,7 +51,11 @@ export class InfluxClientPool {
         timeout: 5000,
       });
       // Expecting point timestamps in milliseconds
-      client = db.getWriteApi(options.org, options.bucket, 'ms');
+      client = db.getWriteApi(options.org, options.bucket, 'ms', {
+        // WriteApi buffers data into batches to optimize data transfer to InfluxDB
+        // server. Delay between data flushes in milliseconds.
+        flushInterval: 5000,
+      });
     }
     // Remembers WriteApi instances for consecutive requests, and renew the last
     // activity timestamp.
@@ -79,7 +83,6 @@ export class InfluxClientPool {
     for (const [key, [client, , activeAt]] of this.$storage) {
       const isExpired = activeAt.getTime() + maxAgeMs > now;
       if (!isExpired) continue;
-      // WriteApi buffers data into batches to optimize data transfer to InfluxDB server.
       // Flush the buffered data immediately and cancels pending retries.
       await graceful(client.close());
       // Remove the cached client instance

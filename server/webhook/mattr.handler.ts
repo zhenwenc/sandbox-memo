@@ -92,13 +92,20 @@ const postWebhookEvent = makeHandler({
     //
     if (channel && metadata?.influxdb && WebhookEventBody.is(body)) {
       logger.debug('Send telemetry data to InfluxDB');
+      /**
+       * The estimated kafka consumer group lag in milliseconds. This metrics uses
+       * the time difference between event creation time and event delivery time.
+       *
+       * Note that the delivery request time is NOT included.
+       */
       influxdb.writePoint(metadata.influxdb, 'webhook_event', point => {
-        const eventTimestamp = new Date(body.event.timestamp);
+        const createdAt = new Date(body.event.timestamp).getTime();
+        const processedAt = new Date(body.deliveryTimestamp).getTime();
         return point
           .tag('channel', channel.id)
           .tag('webhook_id', body.webhookId)
           .tag('event_type', body.event.type)
-          .intField('event_lag_ms', Date.now() - eventTimestamp.getTime());
+          .intField('kafka_group_lag_ms', processedAt - createdAt);
       });
     }
     //
