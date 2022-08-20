@@ -9,7 +9,6 @@ import { instanceOf, validate } from '@navch/codec';
 import { makeHandler, makeHandlers } from '@navch/http';
 import { sleep } from '@navch/common';
 
-import { graceful } from '../utils';
 import * as validator from '../validators';
 import * as pusherRepo from '../subscription/pusher.repository';
 import * as pusherAdapter from '../subscription/pusher.adapter';
@@ -92,6 +91,9 @@ const postWebhookEvent = makeHandler({
     //
     if (channel && metadata?.influxdb && WebhookEventBody.is(body)) {
       logger.debug('Send telemetry data to InfluxDB');
+      const now = Date.now();
+      const eventTimestamp = new Date(body.event.timestamp).getTime();
+      const deliveryTimestamp = new Date(body.deliveryTimestamp).getTime();
       /**
        * The estimated kafka consumer group lag in milliseconds. This metrics uses
        * the time difference between event creation time and event delivery time.
@@ -99,13 +101,12 @@ const postWebhookEvent = makeHandler({
        * Note that the delivery request time is NOT included.
        */
       influxdb.writePoint(metadata.influxdb, 'webhook_event', point => {
-        const createdAt = new Date(body.event.timestamp).getTime();
-        const processedAt = new Date(body.deliveryTimestamp).getTime();
         return point
           .tag('channel', channel.id)
           .tag('webhook_id', body.webhookId)
           .tag('event_type', body.event.type)
-          .intField('kafka_group_lag_ms', processedAt - createdAt);
+          .intField('event_lag_ms', deliveryTimestamp - eventTimestamp)
+          .intField('event_arrival_lag_ms', now - eventTimestamp);
       });
     }
     //
