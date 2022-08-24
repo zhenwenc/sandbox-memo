@@ -13,12 +13,7 @@ import * as pusherAdapter from './subscription/pusher.adapter';
 
 export function buildHandler() {
   const config = new AppConfig();
-  const logger = new Logger({
-    name: 'memo',
-    prettyPrint: {
-      ignore: 'time,pid,hostname,transport,hooks',
-    },
-  });
+  const logger = new Logger({ name: 'memo' });
 
   const requestLogger = morgan('dev', {
     stream: { write: compose(logger.debug, trim) },
