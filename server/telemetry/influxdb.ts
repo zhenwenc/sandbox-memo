@@ -50,8 +50,9 @@ export class InfluxClientPool {
         // client options, 10,000 milliseconds by default.
         timeout: 5000,
       });
-      // Expecting point timestamps in milliseconds
-      client = db.getWriteApi(options.org, options.bucket, 'ms', {
+      // Expecting point timestamps in nanoseconds. Be aware for highly concurrent
+      // requests, the points may collide with milliseconds precision.
+      client = db.getWriteApi(options.org, options.bucket, 'ns', {
         // WriteApi buffers data into batches to optimize data transfer to InfluxDB
         // server. Delay between data flushes in milliseconds.
         flushInterval: 5000,
