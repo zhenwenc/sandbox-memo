@@ -50,11 +50,23 @@ export class InfluxClientPool {
         // client options, 10,000 milliseconds by default.
         timeout: 5000,
       });
-      // Expecting point timestamps in nanoseconds. Be aware for highly concurrent
-      // requests, the points may collide with milliseconds precision.
-      client = db.getWriteApi(options.org, options.bucket, 'ns', {
+      // Expecting point timestamps precision. Be aware that highly concurrent
+      // requests could result in duplicate points with milliseconds precision.
+      //
+      // However, the current time in nanoseconds can’t precisely fit into a JS
+      // number, which can hold at most 2^53 integer number. Nanosecond precision
+      // numbers are thus supplied as a (base-10) string.
+      //
+      // https://influxdata.github.io/influxdb-client-js/influxdb-client.point.timestamp.html
+      // https://docs.influxdata.com/influxdb/v2.4/write-data/best-practices/duplicate-points
+      client = db.getWriteApi(options.org, options.bucket, 'ms', {
         // WriteApi buffers data into batches to optimize data transfer to InfluxDB
         // server. Delay between data flushes in milliseconds.
+        //
+        // When the application is running as Lambda Function, the container will
+        // terminate after a certain period, reduce the flush interval to ensure
+        // all data points are been flushed before termination. Alternatively, the
+        // application should register a shutdown hook to `close()` the client.
         flushInterval: 5000,
       });
     }

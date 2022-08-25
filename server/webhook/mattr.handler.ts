@@ -104,6 +104,7 @@ const postWebhookEvent = makeHandler({
         return point
           .tag('channel', channel.id)
           .tag('webhook_id', body.webhookId)
+          .tag('event_id', body.event.id)
           .tag('event_type', body.event.type)
           .intField('event_lag_ms', deliveryTimestamp - eventTimestamp)
           .intField('event_arrival_lag_ms', now - eventTimestamp);
