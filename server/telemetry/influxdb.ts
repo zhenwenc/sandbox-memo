@@ -1,4 +1,5 @@
 import * as t from 'io-ts';
+import * as uuid from 'uuid';
 import { InfluxDB, WriteApi, Point } from '@influxdata/influxdb-client';
 
 import { Logger } from '@navch/common';
@@ -33,6 +34,7 @@ export class InfluxClientPool {
     return JSON.stringify(options);
   }
 
+  readonly $instanceId = uuid.v4();
   readonly $storage = new Map<string, [WriteApi, ClientOptions, Date]>();
 
   /**
@@ -43,6 +45,8 @@ export class InfluxClientPool {
 
     let [client] = this.$storage.get(cacheKey) || [];
     if (!client) {
+      ServiceLogger.info('Create InfluxDB client' + { clientPoolId: this.$instanceId });
+
       const db = new InfluxDB({
         url: options.url,
         token: options.token,
@@ -68,6 +72,12 @@ export class InfluxClientPool {
         // all data points are been flushed before termination. Alternatively, the
         // application should register a shutdown hook to `close()` the client.
         flushInterval: 5000,
+        /**
+         * Callback to inform about write errors.
+         */
+        writeFailed: (error, lines, attempt, expires) => {
+          ServiceLogger.error('Failed to write point', { error, lines, attempt, expires });
+        },
       });
     }
     // Remembers WriteApi instances for consecutive requests, and renew the last
@@ -93,9 +103,11 @@ export class InfluxClientPool {
     const now = Date.now();
     const maxAgeMs = 30_000;
 
-    for (const [key, [client, , activeAt]] of this.$storage) {
-      const isExpired = activeAt.getTime() + maxAgeMs > now;
+    for (const [key, [client, , lastActivityAt]] of this.$storage) {
+      const isExpired = lastActivityAt.getTime() + maxAgeMs < now;
       if (!isExpired) continue;
+
+      ServiceLogger.info('Close InfluxDB client' + { clientPoolId: this.$instanceId });
       // Flush the buffered data immediately and cancels pending retries.
       await graceful(client.close());
       // Remove the cached client instance

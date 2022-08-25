@@ -9,7 +9,8 @@ export const config = {
   },
 };
 
-const routes = middlewares.toCallback(buildHandler().routes());
+const server = buildHandler();
+const routes = middlewares.toCallback(server.routes());
 async function handler(req: NextApiRequest, res: NextApiResponse) {
   return middlewares.runMiddleware(req, res, routes);
 }
