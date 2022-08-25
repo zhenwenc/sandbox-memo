@@ -48,7 +48,7 @@ export class InfluxClientPool {
         token: options.token,
         // Reduced socket timeout to avoid potential attacks for client provided
         // client options, 10,000 milliseconds by default.
-        timeout: 5000,
+        timeout: 10000,
       });
       // Expecting point timestamps precision. Be aware that highly concurrent
       // requests could result in duplicate points with milliseconds precision.
