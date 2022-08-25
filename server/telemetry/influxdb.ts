@@ -63,7 +63,7 @@ export class InfluxClientPool {
       //
       // https://influxdata.github.io/influxdb-client-js/influxdb-client.point.timestamp.html
       // https://docs.influxdata.com/influxdb/v2.4/write-data/best-practices/duplicate-points
-      client = db.getWriteApi(options.org, options.bucket, 'ms', {
+      client = db.getWriteApi(options.org, options.bucket, 'ns', {
         // WriteApi buffers data into batches to optimize data transfer to InfluxDB
         // server. Delay between data flushes in milliseconds.
         //
