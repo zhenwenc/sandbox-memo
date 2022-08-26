@@ -1,5 +1,4 @@
 import * as t from 'io-ts';
-import * as uuid from 'uuid';
 import ms from 'ms';
 import Redis from 'ioredis';
 import Pusher from 'pusher';
@@ -38,6 +37,10 @@ const ChannelOptions = t.partial({
       return t.failure(s, c, 'Invalid value, must not be greater than 5s');
     })
   ),
+  /**
+   * Optionally verify HTTP signature.
+   */
+  signature: signatures.SignatureScheme,
   /**
    * Optionally push telemetry data to InfluxDB.
    */
@@ -114,14 +117,15 @@ const postWebhookEvent = makeHandler({
     // Verify signature against Joyent' scheme
     //
     let verifyResult: signatures.VerifyResult | undefined = undefined;
-    if (channelId && uuid.validate(channelId)) {
-      verifyResult = await signatures.verifySignature({ logger, request: req });
-    }
-    //
-    // Terminate when failed to verify HTTP signature
-    //
-    if (!verifyResult || !verifyResult.verified) {
-      logger.warn('Failed to verify signature', verifyResult);
+    if (channelId && metadata && metadata.signature) {
+      verifyResult = await signatures.verifySignature({
+        logger,
+        request: req,
+        scheme: metadata.signature,
+      });
+      if (!verifyResult.verified) {
+        logger.warn('Unable to verify signature', verifyResult);
+      }
     }
     //
     // Forward event to PubSub service if enabled

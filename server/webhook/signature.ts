@@ -1,23 +1,37 @@
-import { IncomingMessage } from 'http';
-import { JsonWebKey, createPublicKey } from 'crypto';
+import * as t from 'io-ts';
+import { KeyObject, createPublicKey } from 'node:crypto';
+import { IncomingMessage } from 'node:http';
 
 import { Logger } from '@navch/common';
 
-/**
- * A list of trusted sender public keys in JWK format.
- */
-const JWKS: JsonWebKey[] = [
-  {
-    kty: 'OKP',
-    crv: 'Ed25519',
-    x: '11qYAYKxCrfVS_7TyWQHOg7hcvPapiMlrwIaaPcHURo',
-    kid: 'FdFYFzERwC2uCBB46pZQi4GG85LujR8obt-KWRBICVQ',
-  },
-];
+const Ed25519JsonWebKey = t.type({
+  kty: t.literal('OKP'),
+  crv: t.literal('Ed25519'),
+  x: t.string,
+  kid: t.string,
+});
+
+export type SignatureScheme = t.TypeOf<typeof SignatureScheme>;
+export const SignatureScheme = t.type({
+  /**
+   * HTTP Signature scheme
+   */
+  scheme: t.union([t.undefined, t.literal('httpbis'), t.literal('httpbis-11')], 'signature scheme'),
+  /**
+   * A list of trusted sender public keys in JWK format.
+   */
+  jwks: t.array(Ed25519JsonWebKey, 'public keys'),
+  /**
+   * By default, the `Authorization` header value will be validated. This option
+   * allows you to use an alternative header field, value must be in lower-case.
+   */
+  authorizationHeaderName: t.union([t.undefined, t.string], 'authz header name'),
+});
 
 export type VerifySignatureOptions = {
   readonly logger: Logger;
   readonly request: IncomingMessage;
+  readonly scheme: SignatureScheme;
 };
 
 export type VerifyResult = {
@@ -27,7 +41,18 @@ export type VerifyResult = {
 };
 
 export async function verifySignature(options: VerifySignatureOptions): Promise<VerifyResult> {
-  const { request } = options;
+  switch (options.scheme.scheme) {
+    case 'httpbis':
+      return verifySignatureDraft(options);
+    case 'httpbis-11':
+      return verifySignatureDraft(options);
+    default:
+      return verifySignatureStandard(options);
+  }
+}
+
+async function verifySignatureStandard(options: VerifySignatureOptions): Promise<VerifyResult> {
+  const { request, scheme } = options;
   const logger = options.logger.child({ name: 'Joyent scheme' });
 
   // The library doesn't provide type definitions :(
@@ -36,23 +61,15 @@ export async function verifySignature(options: VerifySignatureOptions): Promise<
 
   try {
     const parsed = httpSignature.parseRequest(request, {
-      authorizationHeaderName: 'signature',
+      authorizationHeaderName: scheme.authorizationHeaderName,
     });
     logger.debug('Parsed http signature', parsed);
-
-    // Lookup key id from signature components
-    const keyId = parsed?.params?.keyId;
-
-    const publicKey = JWKS.find(v => v.kid === keyId);
-    if (!publicKey) {
-      throw new Error(`No imported public key found with kid=${keyId}`);
-    }
 
     /**
      * The `node-http-signature` library uses `sshpk` to verify the signatures,
      * which does not support JWK format, we need to first convert it to PEM.
      */
-    const keyPub = createPublicKey({ format: 'jwk', key: publicKey });
+    const keyPub = findPublicKey(scheme, parsed?.params?.keyId);
     const keyPubPem = keyPub.export({ type: 'spki', format: 'pem' });
 
     /**
@@ -78,12 +95,12 @@ export async function verifySignature(options: VerifySignatureOptions): Promise<
 
     return { verified, parsed, reason: 'Invalid signature' };
   } catch (err) {
-    logger.error('Failed to verify http signature', err);
+    logger.debug('Failed to verify http signature', err);
     return { verified: false, reason: err.message };
   }
 }
 
-export async function verifySignatureDraft(options: VerifySignatureOptions) {
+async function verifySignatureDraft(options: VerifySignatureOptions): Promise<VerifyResult> {
   const { request } = options;
   const logger = options.logger.child({ name: 'IETF draft scheme' });
 
@@ -104,7 +121,16 @@ export async function verifySignatureDraft(options: VerifySignatureOptions) {
 
     // return { verified: false, parsed, reason: 'Invalid signature' };
   } catch (err) {
-    logger.error('Failed to verify http signature', err);
-    // return { verified: false, reason: err.message };
+    logger.debug('Failed to verify http signature', err);
   }
+
+  return { verified: false, reason: 'Not implemented yet' };
+}
+
+function findPublicKey(scheme: SignatureScheme, keyId: string): KeyObject {
+  const publicKey = scheme.jwks.find(v => v.kid === keyId);
+  if (!publicKey) {
+    throw new Error(`No public key found with kid=${keyId}`);
+  }
+  return createPublicKey({ format: 'jwk', key: publicKey });
 }
