@@ -106,7 +106,8 @@ const postWebhookEvent = makeHandler({
           .tag('webhook_id', body.webhookId)
           .tag('event_type', body.event.type)
           .intField('event_lag_ms', deliveryTimestamp - eventTimestamp)
-          .intField('event_arrival_lag_ms', now - eventTimestamp);
+          .intField('event_arrival_lag_ms', now - eventTimestamp)
+          .intField('delivery_lag_ms', now - deliveryTimestamp);
       });
     }
     //
