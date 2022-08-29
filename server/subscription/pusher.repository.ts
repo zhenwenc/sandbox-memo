@@ -1,9 +1,8 @@
 import * as R from 'ramda';
-import * as t from 'io-ts';
+import * as t from '@navch/codec';
 import * as uuid from 'uuid';
 import { Redis } from 'ioredis';
 
-import { validate } from '@navch/codec';
 import { NotFoundError } from '@navch/common';
 
 const TTL = 3600 * 120; // 5 days
@@ -18,7 +17,7 @@ export const PusherChannel = t.type({
 });
 
 export async function insert(redis: Redis, metadata?: Metadata): Promise<PusherChannel> {
-  const record = validate({ id: uuid.v4(), createdAt: Date.now(), metadata }, PusherChannel);
+  const record = t.validate(PusherChannel, { id: uuid.v4(), createdAt: Date.now(), metadata });
   await redis.set(record.id, JSON.stringify(record), 'EX', TTL);
   return record;
 }
@@ -28,7 +27,7 @@ export async function update(redis: Redis, channelId: string, metadata?: Metadat
   if (!record) {
     throw new NotFoundError(`No Pusher channel found with ${channelId}`);
   }
-  const updated = validate(R.mergeDeepRight(record, { metadata }), PusherChannel);
+  const updated = t.validate(PusherChannel, R.mergeDeepRight(record, { metadata }));
   await redis.set(record.id, JSON.stringify(updated), 'EX', TTL);
   return updated;
 }
@@ -38,5 +37,5 @@ export async function findById(redis: Redis, channelId: string): Promise<PusherC
   if (!record) {
     return undefined;
   }
-  return validate(JSON.parse(record), PusherChannel);
+  return t.validate(PusherChannel, JSON.parse(record));
 }

@@ -1,7 +1,7 @@
-import * as t from 'io-ts';
 import { KeyObject, createPublicKey } from 'node:crypto';
 import { IncomingMessage } from 'node:http';
 
+import * as t from '@navch/codec';
 import { Logger } from '@navch/common';
 
 const Ed25519JsonWebKey = t.type({

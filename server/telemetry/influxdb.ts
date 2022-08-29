@@ -1,7 +1,7 @@
-import * as t from 'io-ts';
 import * as uuid from 'uuid';
 import { InfluxDB, WriteApi, Point } from '@influxdata/influxdb-client';
 
+import * as t from '@navch/codec';
 import { Logger } from '@navch/common';
 
 import { graceful } from '../utils';

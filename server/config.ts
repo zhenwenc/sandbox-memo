@@ -1,6 +1,5 @@
 import { BaseConfig, Option } from '@navch/common';
-
-import { resolvePublicURL } from './utils';
+import { resolveNgrokTunnel } from '@navch/http';
 
 export class AppConfig extends BaseConfig {
   readonly port = this.readNumber('PORT', 3000);
@@ -11,6 +10,6 @@ export class AppConfig extends BaseConfig {
   readonly vercelURL = Option.from(this.read('VERCEL_URL', null));
   readonly publicURL = Option.from(this.read('PUBLIC_URL', null))
     .orElse(() => this.vercelURL.map(domain => `https://${domain}`))
-    .map(resolvePublicURL)
+    .flatMap(resolveNgrokTunnel)
     .getOrElse(Promise.resolve(`http://localhost:${this.port}`));
 }

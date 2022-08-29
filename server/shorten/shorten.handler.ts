@@ -1,18 +1,17 @@
-import * as t from 'io-ts';
 import Redis from 'ioredis';
 import base58 from 'bs58';
 import { createHash } from 'crypto';
 
+import * as t from '@navch/codec';
 import { isNotNullish } from '@navch/common';
-import { validate, instanceOf } from '@navch/codec';
 import { makeHandler, makeHandlers } from '@navch/http';
 
-export type HandlerContext = t.TypeOf<typeof HandlerContext>;
-export const HandlerContext = t.type({
+type HandlerContext = t.TypeOf<typeof HandlerContext>;
+const HandlerContext = t.type({
   /**
    * The storage to persist the shortened URLs.
    */
-  redis: t.type({ shorten: instanceOf(Redis) }),
+  redis: t.type({ shorten: t.instanceOf(Redis) }),
 });
 
 type StoredRecord = t.TypeOf<typeof StoredRecord>;
@@ -44,7 +43,7 @@ const resolveShortenURL = makeHandler({
     if (!value) {
       throw new Error(`No shorten URL found with code: ${code}`);
     }
-    const record = validate(JSON.parse(value), StoredRecord);
+    const record = t.validate(StoredRecord, JSON.parse(value));
     ctx.logger.info('Resolved shorten URL:', record);
 
     if (isNotNullish(record.payload)) {

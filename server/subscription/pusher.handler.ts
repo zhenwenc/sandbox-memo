@@ -1,19 +1,18 @@
-import * as t from 'io-ts';
 import * as R from 'ramda';
 import Redis from 'ioredis';
 
+import * as t from '@navch/codec';
 import { thread } from '@navch/common';
-import { instanceOf } from '@navch/codec';
 import { makeHandler, makeHandlers } from '@navch/http';
 
 import * as pusherRepo from '../subscription/pusher.repository';
 
-export type HandlerContext = t.TypeOf<typeof HandlerContext>;
-export const HandlerContext = t.type({
+type HandlerContext = t.TypeOf<typeof HandlerContext>;
+const HandlerContext = t.type({
   /**
    * The storage to persist the received data.
    */
-  redisPusherChannel: instanceOf(Redis),
+  redisPusherChannel: t.instanceOf(Redis),
 });
 
 const postWebhookEvent = makeHandler({

@@ -1,25 +1,23 @@
-import * as t from 'io-ts';
 import ms from 'ms';
 import Redis from 'ioredis';
 import Pusher from 'pusher';
 import { oneLineTrim as markdown } from 'common-tags';
 
-import { instanceOf, validate } from '@navch/codec';
+import * as t from '@navch/codec';
 import { makeHandler, makeHandlers } from '@navch/http';
 import { sleep } from '@navch/common';
 
-import * as validator from '../validators';
 import * as pusherRepo from '../subscription/pusher.repository';
 import * as pusherAdapter from '../subscription/pusher.adapter';
 import * as influxdbModule from '../telemetry/influxdb';
 import * as signatures from './signature';
 
 const HandlerContext = t.type({
-  pusher: t.union([instanceOf(Pusher), t.null]),
+  pusher: t.union([t.instanceOf(Pusher), t.null]),
   redis: t.type({
-    pusher: instanceOf(Redis),
+    pusher: t.instanceOf(Redis),
   }),
-  influxdb: instanceOf(influxdbModule.InfluxClientPool),
+  influxdb: t.instanceOf(influxdbModule.InfluxClientPool),
 });
 
 const ChannelOptions = t.partial({
@@ -28,14 +26,17 @@ const ChannelOptions = t.partial({
    *
    * This can be used to simulate slow service endpoint. Maximum allowed duration is 5 seconds.
    */
-  defer: t.string.pipe(
-    validator.StringNumber('DurationString', (s, c) => {
-      const duration = ms(s);
+  defer: new t.Type<number, string, string>(
+    'DeferDuration',
+    (v): v is number => typeof v === 'number',
+    (u, c) => {
+      const duration = ms(u);
       if (duration > 0 && duration <= 5000) {
         return t.success(duration);
       }
-      return t.failure(s, c, 'Invalid value, must not be greater than 5s');
-    })
+      return t.failure(u, c, 'Invalid value, must not be greater than 5s');
+    },
+    String
   ),
   /**
    * Optionally verify HTTP signature.
@@ -88,7 +89,7 @@ const postWebhookEvent = makeHandler({
     logger.info('Received mattr event', { path, body, signature });
 
     const channel = channelId ? await pusherRepo.findById(redis.pusher, channelId) : undefined;
-    const metadata = channel ? validate(channel.metadata, ChannelOptions) : undefined;
+    const metadata = channel ? t.validate(ChannelOptions, channel.metadata) : undefined;
     //
     // Send telemetry data if configured
     //
