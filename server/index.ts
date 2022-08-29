@@ -6,10 +6,10 @@ import { Logger } from '@navch/common';
 import { makeRouter, middlewares, setRequestContext } from '@navch/http';
 
 import { AppConfig } from './config';
-import * as influxdbModule from './telemetry/influxdb';
 import * as shorten from './shorten/shorten.handler';
-import * as webhookMattr from './webhook/mattr.handler';
 import * as pusherAdapter from './subscription/pusher.adapter';
+import * as influxdbModule from './telemetry/influxdb';
+import * as webhookMattr from './webhook/mattr.handler';
 
 export function buildHandler() {
   const config = new AppConfig();

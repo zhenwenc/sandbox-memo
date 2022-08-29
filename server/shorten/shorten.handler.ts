@@ -1,6 +1,6 @@
-import Redis from 'ioredis';
 import base58 from 'bs58';
 import { createHash } from 'crypto';
+import Redis from 'ioredis';
 
 import * as t from '@navch/codec';
 import { isNotNullish } from '@navch/common';

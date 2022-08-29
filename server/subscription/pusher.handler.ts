@@ -1,5 +1,5 @@
-import * as R from 'ramda';
 import Redis from 'ioredis';
+import * as R from 'ramda';
 
 import * as t from '@navch/codec';
 import { thread } from '@navch/common';

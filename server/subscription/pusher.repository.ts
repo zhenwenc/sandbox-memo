@@ -1,8 +1,8 @@
-import * as R from 'ramda';
-import * as t from '@navch/codec';
-import * as uuid from 'uuid';
 import { Redis } from 'ioredis';
+import * as R from 'ramda';
+import * as uuid from 'uuid';
 
+import * as t from '@navch/codec';
 import { NotFoundError } from '@navch/common';
 
 const TTL = 3600 * 120; // 5 days

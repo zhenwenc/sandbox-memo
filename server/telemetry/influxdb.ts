@@ -1,5 +1,5 @@
-import * as uuid from 'uuid';
 import { InfluxDB, WriteApi, Point } from '@influxdata/influxdb-client';
+import * as uuid from 'uuid';
 
 import * as t from '@navch/codec';
 import { Logger } from '@navch/common';
@@ -90,7 +90,7 @@ export class InfluxClientPool {
    * https://influxdata.github.io/influxdb-client-js/influxdb-client.point.html
    */
   readonly writePoint = (options: ClientOptions, measurement: string, fn: (p: Point) => Point): WriteApi => {
-    this.invalidateExpiredItems(); // async cleanup
+    void this.invalidateExpiredItems(); // async cleanup
     const point = fn(new Point(measurement));
     const writeApi = this.getWriteApi(options);
     writeApi.writePoint(point);

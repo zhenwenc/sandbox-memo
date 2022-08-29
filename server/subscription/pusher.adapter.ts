@@ -2,8 +2,8 @@ import Pusher from 'pusher';
 
 import { HttpStatus, AbstractError, Logger } from '@navch/common';
 
-import { PusherChannel } from '../subscription/pusher.repository';
 import { AppConfig } from '../config';
+import { PusherChannel } from '../subscription/pusher.repository';
 
 type EventKind = 'WEBHOOK_MATTR_EVENT';
 
