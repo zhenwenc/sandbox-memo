@@ -41,6 +41,7 @@ export class InfluxClientPool {
    * https://influxdata.github.io/influxdb-client-js/influxdb-client.influxdb.html
    */
   readonly getWriteApi = (options: ClientOptions): WriteApi => {
+    const { org, bucket } = options;
     const cacheKey = InfluxClientPool.getCacheKey(options);
 
     let [client] = this.$storage.get(cacheKey) || [];
@@ -76,7 +77,13 @@ export class InfluxClientPool {
          * Callback to inform about write errors.
          */
         writeFailed: (error, lines, attempt, expires) => {
-          ServiceLogger.error('Failed to write point', { error, lines, attempt, expires });
+          ServiceLogger.error('Failed to send lines', { error, lines, attempt, expires, org, bucket });
+        },
+        /**
+         * Callback to inform about write success.
+         */
+        writeSuccess: lines => {
+          ServiceLogger.info(`Successfully send ${lines.length} lines`, { org, bucket });
         },
       });
     }

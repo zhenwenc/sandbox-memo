@@ -21,7 +21,7 @@
   },
   "dependencies": {
     "@digitalbazaar/http-digest-header": "git+https://github.com/digitalbazaar/http-signature-header.git#9bc7f4956dd045325ccc31ae382c9ae5c2195710",
-    "@influxdata/influxdb-client": "1.28.0",
+    "@influxdata/influxdb-client": "1.29.0",
     "@navch/codec": "0.7.5-next.79",
     "@navch/common": "0.7.5-next.79",
     "@navch/http": "0.7.5-next.79",
