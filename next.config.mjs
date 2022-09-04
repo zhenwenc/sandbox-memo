@@ -16,7 +16,7 @@ const nextConfig = {
    * https://swc.rs
    * https://nextjs.org/docs/messages/failed-loading-swc
    */
-  swcMinify: false,
+  swcMinify: true,
 };
 
 export default nextConfig;
