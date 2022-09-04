@@ -1,5 +1,6 @@
-import { InfluxDB, WriteApi, Point } from '@influxdata/influxdb-client';
+import crypto from 'crypto';
 import * as uuid from 'uuid';
+import { InfluxDB, WriteApi, Point } from '@influxdata/influxdb-client';
 
 // @ts-ignore:next-line
 import currentNanoTime from 'nano-time';
@@ -34,7 +35,7 @@ export const ClientOptions = t.strict({
 export class InfluxClientPool {
   static getCacheKey(options: ClientOptions): string {
     // TODO normalize with `canonicalize`
-    return JSON.stringify(options);
+    return crypto.createHash('sha256').update(JSON.stringify(options)).digest('base64');
   }
 
   readonly $instanceId = uuid.v4();
