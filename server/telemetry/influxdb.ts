@@ -1,6 +1,9 @@
 import { InfluxDB, WriteApi, Point } from '@influxdata/influxdb-client';
 import * as uuid from 'uuid';
 
+// @ts-ignore:next-line
+import currentNanoTime from 'nano-time';
+
 import * as t from '@navch/codec';
 import { Logger } from '@navch/common';
 
@@ -36,6 +39,14 @@ export class InfluxClientPool {
 
   readonly $instanceId = uuid.v4();
   readonly $storage = new Map<string, [WriteApi, ClientOptions, Date]>();
+
+  /**
+   * Helper function that returns the current timestamp since epoch in nanoseconds.
+   *
+   * FIXME Not sure why the build-in `influxdb-client-js` functions has weird
+   * behavior in docker compose environment and/or NextJS dev server.
+   */
+  readonly currentTimestamp = () => currentNanoTime();
 
   /**
    * https://influxdata.github.io/influxdb-client-js/influxdb-client.influxdb.html

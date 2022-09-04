@@ -88,12 +88,6 @@ const postWebhookEvent = makeHandler({
     const { signature } = headers;
     logger.info('Received mattr event', { path, body, signature });
 
-    // FIXME Not sure why influxdb-client-js build-in nanoseconds timer has
-    // weird behavior in docker compose environment.
-    //
-    // @ts-ignore:next-line
-    const { default: nanoTime } = await import('nano-time');
-
     const channel = channelId ? await pusherRepo.findById(redis.pusher, channelId) : undefined;
     const metadata = channel ? t.validate(ChannelOptions, channel.metadata) : undefined;
     //
@@ -118,7 +112,7 @@ const postWebhookEvent = makeHandler({
           .intField('event_lag_ms', deliveryTimestamp - eventTimestamp)
           .intField('event_arrival_lag_ms', now - eventTimestamp)
           .intField('delivery_lag_ms', now - deliveryTimestamp)
-          .timestamp(nanoTime());
+          .timestamp(influxdb.currentTimestamp());
       });
     }
     //
