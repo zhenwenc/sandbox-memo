@@ -5,8 +5,6 @@ import { HttpStatus, AbstractError, Logger } from '@navch/common';
 import { AppConfig } from '../config';
 import { PusherChannel } from '../subscription/pusher.repository';
 
-type EventKind = 'WEBHOOK_MATTR_EVENT';
-
 const ServiceLogger = new Logger({ name: 'subscription' });
 
 export class PusherPublishError extends AbstractError {
@@ -26,7 +24,7 @@ export function init(config: AppConfig): Pusher | null {
 
 export type PusherSendRequest<T> = {
   readonly channel: PusherChannel;
-  readonly event: EventKind;
+  readonly event: string;
   readonly data: T;
 };
 export async function publish<T>(pusher: Pusher, req: PusherSendRequest<T>): Promise<unknown> {

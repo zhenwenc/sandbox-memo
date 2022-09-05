@@ -12,6 +12,8 @@ import { graceful } from '../utils';
 
 const ServiceLogger = Logger.child({ name: 'influxdb' });
 
+export type InfluxPointBuilder = (p: Point) => Point;
+
 export type ClientOptions = t.TypeOf<typeof ClientOptions>;
 export const ClientOptions = t.strict({
   /**
@@ -32,6 +34,14 @@ export const ClientOptions = t.strict({
   bucket: t.string,
 });
 
+/**
+ * Helper function that returns the current timestamp since epoch in nanoseconds.
+ *
+ * FIXME Not sure why the build-in `influxdb-client-js` functions has weird
+ * behavior in docker compose environment and/or NextJS dev server.
+ */
+export const currentTimestamp = () => currentNanoTime();
+
 export class InfluxClientPool {
   static getCacheKey(options: ClientOptions): string {
     // TODO normalize with `canonicalize`
@@ -40,14 +50,6 @@ export class InfluxClientPool {
 
   readonly $instanceId = uuid.v4();
   readonly $storage = new Map<string, [WriteApi, ClientOptions, Date]>();
-
-  /**
-   * Helper function that returns the current timestamp since epoch in nanoseconds.
-   *
-   * FIXME Not sure why the build-in `influxdb-client-js` functions has weird
-   * behavior in docker compose environment and/or NextJS dev server.
-   */
-  readonly currentTimestamp = () => currentNanoTime();
 
   /**
    * https://influxdata.github.io/influxdb-client-js/influxdb-client.influxdb.html
@@ -108,7 +110,7 @@ export class InfluxClientPool {
   /**
    * https://influxdata.github.io/influxdb-client-js/influxdb-client.point.html
    */
-  readonly writePoint = (options: ClientOptions, measurement: string, fn: (p: Point) => Point): WriteApi => {
+  readonly writePoint = (options: ClientOptions, measurement: string, fn: InfluxPointBuilder): WriteApi => {
     void this.invalidateExpiredItems(); // async cleanup
     const point = fn(new Point(measurement));
     const writeApi = this.getWriteApi(options);

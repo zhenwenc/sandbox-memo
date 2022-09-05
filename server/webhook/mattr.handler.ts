@@ -11,6 +11,7 @@ import * as pusherAdapter from '../subscription/pusher.adapter';
 import * as pusherRepo from '../subscription/pusher.repository';
 import * as influxdbModule from '../telemetry/influxdb';
 import * as signatures from './signature';
+import { schemes } from './scheme';
 
 const HandlerContext = t.type({
   pusher: t.union([t.instanceOf(Pusher), t.null]),
@@ -48,19 +49,8 @@ const ChannelOptions = t.partial({
   influxdb: influxdbModule.ClientOptions,
 });
 
-const WebhookEventBody = t.type({
-  event: t.type({
-    id: t.string,
-    type: t.string,
-    timestamp: t.string,
-  }),
-  webhookId: t.string,
-  deliveryId: t.string,
-  deliveryTimestamp: t.string,
-});
-
 const postChannelRegister = makeHandler({
-  route: '/webhook/mattr/channels',
+  route: '/webhook/channels',
   method: 'POST',
   input: { body: ChannelOptions },
   context: HandlerContext,
@@ -70,15 +60,18 @@ const postChannelRegister = makeHandler({
   },
 });
 
+/**
+ * This is a _public_ callback endpoint for receiving webhook notifications.
+ *
+ * It supports forwarding the received events and signature verification results to a
+ * registered pub/sub channel, the request must be authenticated with HTTP signature
+ * using the configured signature scheme.
+ *
+ * See also {@link https://hookdeck.com/}
+ */
 const postWebhookEvent = makeHandler({
-  route: '/webhook/mattr/events/:channelId?',
+  route: '/webhook/events/:channelId?',
   method: 'POST',
-  description: markdown`
-    This is a _public_ callback endpoint for receiving the pushed events.
-
-    If there exists a registered pub/sub channel, the request must be authenticated
-    using HTTP signature, otherwise, respond immediately.
-  `,
   input: {
     params: t.type({ channelId: t.union([t.undefined, t.string]) }),
     body: t.type({ event: t.unknown }),
@@ -86,37 +79,21 @@ const postWebhookEvent = makeHandler({
   context: HandlerContext,
   handle: async ({ channelId }, body, { redis, pusher, influxdb, logger, headers, path, req }) => {
     const { signature } = headers;
-    logger.info('Received mattr event', { path, body, signature });
+    logger.info('Received webhook event', { path, body, signature });
 
     const channel = channelId ? await pusherRepo.findById(redis.pusher, channelId) : undefined;
     const metadata = channel ? t.validate(ChannelOptions, channel.metadata) : undefined;
+    const scheme = schemes.find(s => s.isEventBody(body));
     //
     // Send telemetry data if configured
     //
-    if (channel && metadata?.influxdb && WebhookEventBody.is(body)) {
+    if (channel && metadata?.influxdb && scheme?.isEventBody(body)) {
       logger.debug('Send telemetry data to InfluxDB');
-      const now = Date.now();
-      const eventTimestamp = new Date(body.event.timestamp).getTime();
-      const deliveryTimestamp = new Date(body.deliveryTimestamp).getTime();
-      /**
-       * The estimated kafka consumer group lag in milliseconds. This metrics uses
-       * the time difference between event creation time and event delivery time.
-       *
-       * Note that the delivery request time is NOT included.
-       */
-      influxdb.writePoint(metadata.influxdb, 'webhook_event', point => {
-        return point
-          .tag('channel', channel.id)
-          .tag('webhook_id', body.webhookId)
-          .tag('event_type', body.event.type)
-          .intField('event_lag_ms', deliveryTimestamp - eventTimestamp)
-          .intField('event_arrival_lag_ms', now - eventTimestamp)
-          .intField('delivery_lag_ms', now - deliveryTimestamp)
-          .timestamp(influxdb.currentTimestamp());
-      });
+      const pointBuilder = scheme.influxdb.pointBuilder({ body, channel });
+      influxdb.writePoint(metadata.influxdb, 'webhook_event', pointBuilder);
     }
     //
-    // Verify signature against Joyent' scheme
+    // Verify signature against the configured scheme
     //
     let verifyResult: signatures.VerifyResult | undefined = undefined;
     if (channelId && metadata && metadata.signature) {
@@ -132,11 +109,11 @@ const postWebhookEvent = makeHandler({
     //
     // Forward event to PubSub service if enabled
     //
-    if (pusher && channel && verifyResult?.verified) {
+    if (scheme && pusher && channel && verifyResult?.verified) {
       logger.debug('Skipped publishing event, no channel found');
       await pusherAdapter.publish(pusher, {
         channel,
-        event: 'WEBHOOK_MATTR_EVENT',
+        event: scheme.pusher.eventType,
         data: { event: body.event, signature, verifyResult },
       });
     }
