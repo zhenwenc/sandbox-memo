@@ -9,7 +9,7 @@ import { AppConfig } from './config';
 import * as shorten from './shorten/shorten.handler';
 import * as influxdbModule from './telemetry/influxdb';
 import * as pusherAdapter from './subscription/pusher.adapter';
-import * as webhookMattr from './webhook/mattr.handler';
+import * as webhook from './webhook/webhook.handler';
 
 export function buildHandler() {
   const config = new AppConfig();
@@ -54,7 +54,7 @@ export function buildHandler() {
       return { logger, redis, pusher, influxdb };
     });
     router.use(middlewares.errorHandler({ logger: logger.child({ name: 'webhook' }), expose: true }));
-    router.use('/api', setContext, makeRouter(webhookMattr.handlers()).routes());
+    router.use('/api', setContext, makeRouter(webhook.handlers()).routes());
   }
 
   return router;
