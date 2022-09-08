@@ -4,6 +4,7 @@ import * as t from '@navch/codec';
 import { HttpStatus, AbstractError, Logger } from '@navch/common';
 
 import { AppConfig } from '../config';
+import { ConnectionPool } from '../interfaces/ConnectionPool';
 import { PusherChannel } from '../subscription/pusher.repository';
 
 const ServiceLogger = new Logger({ name: 'pusher' });
@@ -54,5 +55,31 @@ export async function publish<T>(pusher: Pusher, req: PusherSendRequest<T>): Pro
   } catch (err) {
     ServiceLogger.debug('Failed to publish event', { err });
     throw new PusherPublishError(err);
+  }
+}
+
+export class PusherConnectionPool extends ConnectionPool<ClientOptions, Pusher> {
+  public initInstance(options: ClientOptions): Pusher {
+    return Pusher.forURL(options.url);
+  }
+
+  async releaseInstance(_: ClientOptions, _client: Pusher) {
+    // noop
+  }
+
+  async publish<T>(options: ClientOptions, req: PusherSendRequest<T>): Promise<unknown> {
+    const { channel, event, data } = req;
+    try {
+      const pusher = this.getInstance(options);
+      const res = await pusher.trigger(`private-${channel.id}`, event, data);
+      if (res.status !== HttpStatus.OK) {
+        throw new PusherPublishError('unexpected response status');
+      }
+      ServiceLogger.debug('Publish event to pusher');
+      return await res.json();
+    } catch (err) {
+      ServiceLogger.debug('Failed to publish event', { err });
+      throw new PusherPublishError(err);
+    }
   }
 }

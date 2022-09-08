@@ -16,6 +16,7 @@ const HandlerContext = t.type({
     pusher: t.instanceOf(Redis),
   }),
   influxdb: t.instanceOf(influxdbModule.InfluxClientPool),
+  pusher: t.instanceOf(pusherAdapter.PusherConnectionPool),
 });
 
 const ChannelOptions = t.partial({
@@ -78,7 +79,7 @@ const postWebhookEvent = makeHandler({
     body: t.type({ event: t.unknown }),
   },
   context: HandlerContext,
-  handle: async ({ channelId }, body, { redis, influxdb, logger, headers, path, req }) => {
+  handle: async ({ channelId }, body, { redis, pusher, influxdb, logger, headers, path, req }) => {
     const { signature } = headers;
     logger.info('Received webhook event', { path, body, signature });
 
@@ -112,8 +113,7 @@ const postWebhookEvent = makeHandler({
     //
     if (channel && metadata?.pusher && scheme) {
       logger.debug('Publishing event to Pusher');
-      const pusher = pusherAdapter.forURL(metadata.pusher.url)
-      await pusherAdapter.publish(pusher, {
+      await pusher.publish(metadata.pusher, {
         channel,
         event: scheme.pusher.eventType,
         data: { body, signature, verifyResult },

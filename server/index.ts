@@ -8,6 +8,7 @@ import { makeRouter, middlewares, setRequestContext } from '@navch/http';
 import { AppConfig } from './config';
 import * as shorten from './shorten/shorten.handler';
 import * as influxdbModule from './telemetry/influxdb';
+import * as pusherAdapter from './subscription/pusher.adapter';
 import * as webhookMattr from './webhook/mattr.handler';
 
 export function buildHandler() {
@@ -37,6 +38,7 @@ export function buildHandler() {
     }),
   };
 
+  const pusher = new pusherAdapter.PusherConnectionPool();
   const influxdb = new influxdbModule.InfluxClientPool();
 
   {
@@ -49,7 +51,7 @@ export function buildHandler() {
   }
   {
     const setContext = setRequestContext(async () => {
-      return { logger, redis, influxdb };
+      return { logger, redis, pusher, influxdb };
     });
     router.use(middlewares.errorHandler({ logger: logger.child({ name: 'webhook' }), expose: true }));
     router.use('/api', setContext, makeRouter(webhookMattr.handlers()).routes());
