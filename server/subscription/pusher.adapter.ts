@@ -1,11 +1,22 @@
 import Pusher from 'pusher';
 
+import * as t from '@navch/codec';
 import { HttpStatus, AbstractError, Logger } from '@navch/common';
 
 import { AppConfig } from '../config';
 import { PusherChannel } from '../subscription/pusher.repository';
 
-const ServiceLogger = new Logger({ name: 'subscription' });
+const ServiceLogger = new Logger({ name: 'pusher' });
+
+export type ClientOptions = t.TypeOf<typeof ClientOptions>;
+export const ClientOptions = t.strict({
+  /**
+   * Pusher server URI. Must be in format:
+   *
+   * https://{username}:{token}@api-{region}.pusher.com/apps/{appId}
+   */
+  url: t.string,
+});
 
 export class PusherPublishError extends AbstractError {
   readonly status = HttpStatus.BAD_REQUEST;
@@ -20,6 +31,10 @@ export class PusherPublishError extends AbstractError {
 export function init(config: AppConfig): Pusher | null {
   if (!config.pusherURI) return null;
   return Pusher.forURL(config.pusherURI);
+}
+
+export function forURL(uri: string): Pusher {
+  return Pusher.forURL(uri);
 }
 
 export type PusherSendRequest<T> = {

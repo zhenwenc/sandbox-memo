@@ -1,7 +1,5 @@
-import { oneLineTrim as markdown } from 'common-tags';
 import Redis from 'ioredis';
 import ms from 'ms';
-import Pusher from 'pusher';
 
 import * as t from '@navch/codec';
 import { sleep } from '@navch/common';
@@ -14,7 +12,6 @@ import * as signatures from './signature';
 import { schemes } from './scheme';
 
 const HandlerContext = t.type({
-  pusher: t.union([t.instanceOf(Pusher), t.null]),
   redis: t.type({
     pusher: t.instanceOf(Redis),
   }),
@@ -47,6 +44,10 @@ const ChannelOptions = t.partial({
    * Optionally push telemetry data to InfluxDB.
    */
   influxdb: influxdbModule.ClientOptions,
+  /**
+   * Optionally push received data to Pusher.
+   */
+  pusher: pusherAdapter.ClientOptions,
 });
 
 const postChannelRegister = makeHandler({
@@ -77,7 +78,7 @@ const postWebhookEvent = makeHandler({
     body: t.type({ event: t.unknown }),
   },
   context: HandlerContext,
-  handle: async ({ channelId }, body, { redis, pusher, influxdb, logger, headers, path, req }) => {
+  handle: async ({ channelId }, body, { redis, influxdb, logger, headers, path, req }) => {
     const { signature } = headers;
     logger.info('Received webhook event', { path, body, signature });
 
@@ -109,12 +110,13 @@ const postWebhookEvent = makeHandler({
     //
     // Forward event to PubSub service if enabled
     //
-    if (scheme && pusher && channel && verifyResult?.verified) {
-      logger.debug('Skipped publishing event, no channel found');
+    if (channel && metadata?.pusher && scheme) {
+      logger.debug('Publishing event to Pusher');
+      const pusher = pusherAdapter.forURL(metadata.pusher.url)
       await pusherAdapter.publish(pusher, {
         channel,
         event: scheme.pusher.eventType,
-        data: { event: body.event, signature, verifyResult },
+        data: { body, signature, verifyResult },
       });
     }
     //
