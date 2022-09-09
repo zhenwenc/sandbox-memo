@@ -56,9 +56,15 @@ const postChannelRegister = makeHandler({
   method: 'POST',
   input: { body: ChannelOptions },
   context: HandlerContext,
-  handle: async (_1, options, { redis, logger }) => {
+  handle: async (_1, options, { redis, logger, request }) => {
+    const { protocol, host } = request;
+
     logger.info('Register pusher channel', options);
-    return await pusherRepo.insert(redis.pusher, options);
+    const record = await pusherRepo.insert(redis.pusher, options);
+    return {
+      ...record,
+      callbackURL: `${protocol}://${host}/webhook/events/${record.id}`,
+    };
   },
 });
 
