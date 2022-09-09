@@ -4,6 +4,9 @@ import { middlewares } from '@navch/http';
 
 import { buildHandler } from '../../server';
 
+// @ts-ignore:next-line
+import 'pino-logdna';
+
 export const config = {
   api: {
     bodyParser: false,
