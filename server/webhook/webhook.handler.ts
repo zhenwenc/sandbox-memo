@@ -59,7 +59,7 @@ const postChannelRegister = makeHandler({
   handle: async (_1, options, { redis, logger, request }) => {
     const { protocol, host } = request;
 
-    logger.info('Register pusher channel', options);
+    logger.info('Register webhook channel', options);
     const record = await pusherRepo.insert(redis.pusher, options);
     return {
       ...record,
