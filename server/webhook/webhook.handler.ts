@@ -81,8 +81,10 @@ const postWebhookEvent = makeHandler({
   route: '/webhook/events/:channelId?',
   method: 'POST',
   input: {
-    params: t.type({ channelId: t.union([t.undefined, t.string]) }),
-    body: t.type({ event: t.unknown }),
+    params: t.type({
+      channelId: t.union([t.undefined, t.string]),
+    }),
+    body: t.unknown,
   },
   context: HandlerContext,
   handle: async ({ channelId }, body, { redis, pusher, influxdb, logger, headers, path, req }) => {
