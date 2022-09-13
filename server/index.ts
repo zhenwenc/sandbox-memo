@@ -36,6 +36,12 @@ export function buildHandler() {
       keepAlive: 5000,
       lazyConnect: true,
     }),
+    webhook: new Redis(config.redisURI, {
+      keyPrefix: 'sandbox:memo:webhook:',
+      showFriendlyErrorStack: true,
+      keepAlive: 5000,
+      lazyConnect: true,
+    }),
   };
 
   const pusher = new pusherAdapter.PusherConnectionPool();

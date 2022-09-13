@@ -9,8 +9,12 @@ export type RequestContext<TBody> = {
   readonly channel: PusherChannel;
 };
 
-export type EventScheme<TEvent extends t.Mixed> = {
+export type EventScheme<TEvent extends t.Mixed, TPresentation extends t.Mixed> = {
   readonly isEventBody: (data: unknown) => data is t.TypeOf<TEvent>;
+  readonly isPresentationBody: (data: unknown) => data is t.TypeOf<TPresentation>;
+  readonly presentation: {
+    uid: (data: t.TypeOf<TPresentation>) => string;
+  };
   readonly influxdb: {
     pointBuilder: (data: RequestContext<t.TypeOf<TEvent>>) => InfluxPointBuilder;
   };

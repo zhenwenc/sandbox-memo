@@ -14,11 +14,40 @@ const WebhookEventBody = t.type({
   deliveryTimestamp: t.string,
 });
 
+const DIDAuthPresentation = t.type({
+  presentationType: t.literal('DIDAuth'),
+  challengeId: t.string,
+  verified: t.boolean,
+  holder: t.string,
+});
+
+const QueryByExamplePresentation = t.type({
+  presentationType: t.literal('QueryByExample'),
+  challengeId: t.string,
+  verified: t.boolean,
+  holder: t.string,
+  claims: t.UnknownRecord,
+});
+
+const QueryByFramePresentation = t.type({
+  presentationType: t.literal('QueryByFrame'),
+  challengeId: t.string,
+  verified: t.boolean,
+  holder: t.string,
+  claims: t.UnknownRecord,
+});
+
+const PresentationBody = t.union([DIDAuthPresentation, QueryByExamplePresentation, QueryByFramePresentation]);
+
 /**
  * MATTR Webhook {@link https://learn.mattr.global/tutorials/}
  */
-export const mattrScheme: EventScheme<typeof WebhookEventBody> = {
+export const mattrScheme: EventScheme<typeof WebhookEventBody, typeof PresentationBody> = {
   isEventBody: WebhookEventBody.is,
+  isPresentationBody: PresentationBody.is,
+  presentation: {
+    uid: data => data.challengeId,
+  },
   influxdb: {
     pointBuilder: data => point => {
       const { body, channel } = data;

@@ -7,6 +7,7 @@ import { makeHandler, makeHandlers } from '@navch/http';
 
 import * as pusherAdapter from '../subscription/pusher.adapter';
 import * as pusherRepo from '../subscription/pusher.repository';
+import * as webhookRepo from './webhook.repository';
 import * as influxdbModule from '../telemetry/influxdb';
 import * as signatures from './signature';
 import { schemes } from './scheme';
@@ -14,6 +15,7 @@ import { schemes } from './scheme';
 const HandlerContext = t.type({
   redis: t.type({
     pusher: t.instanceOf(Redis),
+    webhook: t.instanceOf(Redis),
   }),
   influxdb: t.instanceOf(influxdbModule.InfluxClientPool),
   pusher: t.instanceOf(pusherAdapter.PusherConnectionPool),
@@ -94,14 +96,7 @@ const postWebhookEvent = makeHandler({
     const channel = channelId ? await pusherRepo.findById(redis.pusher, channelId) : undefined;
     const metadata = channel ? t.validate(ChannelOptions, channel.metadata) : undefined;
     const scheme = schemes.find(s => s.isEventBody(body));
-    //
-    // Send telemetry data if configured
-    //
-    if (channel && metadata?.influxdb && scheme?.isEventBody(body)) {
-      logger.debug('Send telemetry data to InfluxDB');
-      const pointBuilder = scheme.influxdb.pointBuilder({ body, channel });
-      influxdb.writePoint(metadata.influxdb, 'webhook_event', pointBuilder);
-    }
+
     //
     // Verify signature against the configured scheme
     //
@@ -115,6 +110,14 @@ const postWebhookEvent = makeHandler({
       if (!verifyResult.verified) {
         logger.warn('Unable to verify signature', verifyResult);
       }
+    }
+    //
+    // Send telemetry data if configured
+    //
+    if (channel && metadata?.influxdb && scheme?.isEventBody(body)) {
+      logger.debug('Send telemetry data to InfluxDB');
+      const pointBuilder = scheme.influxdb.pointBuilder({ body, channel });
+      influxdb.writePoint(metadata.influxdb, 'webhook_event', pointBuilder);
     }
     //
     // Forward event to PubSub service if enabled
@@ -138,4 +141,40 @@ const postWebhookEvent = makeHandler({
   },
 });
 
-export const handlers = makeHandlers(() => [postWebhookEvent, postChannelRegister]);
+const postPresentationResponse = makeHandler({
+  route: '/webhook/presentations',
+  method: 'POST',
+  input: { body: t.unknown },
+  context: HandlerContext,
+  handle: async (_, body, { redis, logger }) => {
+    logger.info('Received presentation response', { body });
+    for (const scheme of schemes) {
+      //
+      // Persist W3C presentation response
+      //
+      if (scheme.isPresentationBody(body)) {
+        logger.info('Persist presentation response');
+        await webhookRepo.insertPresentation(redis.webhook, scheme.presentation.uid(body), body);
+      }
+    }
+    return { status: 'OK' };
+  },
+});
+
+const getPresentationResponse = makeHandler({
+  route: '/webhook/presentations/:challengeId',
+  method: 'GET',
+  input: { params: t.type({ challengeId: t.string }) },
+  context: HandlerContext,
+  handle: async ({ challengeId }, _2, { redis }) => {
+    const record = await webhookRepo.findPresentationById(redis.webhook, challengeId);
+    return { value: record };
+  },
+});
+
+export const handlers = makeHandlers(() => [
+  postWebhookEvent,
+  postChannelRegister,
+  postPresentationResponse,
+  getPresentationResponse,
+]);
