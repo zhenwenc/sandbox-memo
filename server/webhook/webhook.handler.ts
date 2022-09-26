@@ -54,7 +54,7 @@ const ChannelOptions = t.partial({
 });
 
 const postChannelRegister = makeHandler({
-  route: '/webhook/channels',
+  route: 'v1/webhook/channels',
   method: 'POST',
   input: { body: ChannelOptions },
   context: HandlerContext,
@@ -80,7 +80,7 @@ const postChannelRegister = makeHandler({
  * See also {@link https://hookdeck.com/}
  */
 const postWebhookEvent = makeHandler({
-  route: '/webhook/events/:channelId?',
+  route: 'v1/webhook/events/:channelId?',
   method: 'POST',
   input: {
     params: t.type({
@@ -142,7 +142,7 @@ const postWebhookEvent = makeHandler({
 });
 
 const postPresentationResponse = makeHandler({
-  route: '/webhook/presentations',
+  route: 'v1/webhook/presentations',
   method: 'POST',
   input: { body: t.unknown },
   context: HandlerContext,
@@ -162,7 +162,7 @@ const postPresentationResponse = makeHandler({
 });
 
 const getPresentationResponse = makeHandler({
-  route: '/webhook/presentations/:challengeId',
+  route: 'v1/webhook/presentations/:challengeId',
   method: 'GET',
   input: { params: t.type({ challengeId: t.string }) },
   context: HandlerContext,
