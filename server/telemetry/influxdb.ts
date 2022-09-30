@@ -46,7 +46,7 @@ export class InfluxClientPool extends ConnectionPool<ClientOptions, WriteApi> {
    */
   public initInstance(options: ClientOptions): WriteApi {
     const { org, bucket } = options;
-    ServiceLogger.info('Create InfluxDB client' + { instanceId: this.instanceId });
+    ServiceLogger.info('Create InfluxDB client', { instanceId: this.instanceId });
 
     const db = new InfluxDB({
       url: options.url,
