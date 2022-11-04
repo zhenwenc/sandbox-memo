@@ -91,7 +91,7 @@ const postWebhookEvent = makeHandler({
   context: HandlerContext,
   handle: async ({ channelId }, body, { redis, pusher, influxdb, logger, headers, path, req }) => {
     const { signature } = headers;
-    logger.info('Received webhook event', { path, body, signature });
+    logger.info('Received webhook event', { path, body, headers, signature });
 
     const channel = channelId ? await pusherRepo.findById(redis.pusher, channelId) : undefined;
     const metadata = channel ? t.validate(ChannelOptions, channel.metadata) : undefined;
@@ -104,6 +104,7 @@ const postWebhookEvent = makeHandler({
     if (channelId && metadata && metadata.signature) {
       verifyResult = await signatures.verifySignature({
         logger,
+        body,
         request: req,
         scheme: metadata.signature,
       });

@@ -16,7 +16,7 @@ export const SignatureScheme = t.type({
   /**
    * HTTP Signature scheme
    */
-  scheme: t.union([t.undefined, t.literal('httpbis'), t.literal('httpbis-11')], 'signature scheme'),
+  scheme: t.union([t.undefined, t.literal('httpbis'), t.literal('httpbis-12')], 'signature scheme'),
   /**
    * A list of trusted sender public keys in JWK format.
    */
@@ -30,22 +30,23 @@ export const SignatureScheme = t.type({
 
 export type VerifySignatureOptions = {
   readonly logger: Logger;
-  readonly request: IncomingMessage;
   readonly scheme: SignatureScheme;
+  readonly request: IncomingMessage;
+  readonly body?: unknown;
 };
 
 export type VerifyResult = {
   readonly verified: boolean;
-  readonly reason: string;
+  readonly reason?: string;
   readonly parsed?: Record<string, unknown>;
 };
 
 export async function verifySignature(options: VerifySignatureOptions): Promise<VerifyResult> {
   switch (options.scheme.scheme) {
     case 'httpbis':
-      return verifySignatureDraft(options);
-    case 'httpbis-11':
-      return verifySignatureDraft(options);
+      return verifySignatureDraft12(options);
+    case 'httpbis-12':
+      return verifySignatureDraft12(options);
     default:
       return verifySignatureStandard(options);
   }
@@ -100,31 +101,31 @@ async function verifySignatureStandard(options: VerifySignatureOptions): Promise
   }
 }
 
-async function verifySignatureDraft(options: VerifySignatureOptions): Promise<VerifyResult> {
-  const { request } = options;
-  const logger = options.logger.child({ name: 'IETF draft scheme' });
+async function verifySignatureDraft12(options: VerifySignatureOptions): Promise<VerifyResult> {
+  const { request, scheme } = options;
+  const logger = options.logger.child({ name: 'IETF draft scheme 12' });
 
-  const signature = `keyId="Test",algorithm="rsa-sha256",\ncreated=1402170695, expires=1402170699,\nheaders="(request-target) (created) (expires) host date content-type digest content-length",\nsignature="vSdrb+dS3EceC9bcwHSo4MlyKS59iFIrhgYkz8+oVLEEzmYZZvRs8rgOp+63LEM3v+MFHB32NfpB2bEKBIvB1q52LaEUHFv120V01IL+TAD48XaERZFukWgHoBTLMhYS2Gb51gWxpeIq8knRmPnYePbF5MOkR0Zkly4zKH7s1dE="`;
-
-  // The library doesn't provide type definitions :(
-  // @ts-ignore:next-line
-  const httpSignature = await import('@digitalbazaar/http-digest-header');
+  const httpSignatures = await import('@mattrglobal/http-signatures');
 
   try {
-    const parsedSampleSignature = await await httpSignature.parseSignatureHeader(signature);
-    logger.info('------- parsedSampleSignature', parsedSampleSignature);
+    const keyMap = scheme.jwks.reduce((acc, jwk) => {
+      return jwk.kid ? { ...acc, [jwk.kid]: { key: jwk } } : acc;
+    }, {});
 
-    const parsed = await httpSignature.parseRequest(request, {
-      authorizationHeaderName: 'signature',
+    logger.info('Verifing http signature', { keyMap });
+    const result = await httpSignatures.verifyRequest({
+      verifier: { keyMap },
+      request,
+      body: options.body ? JSON.stringify(options.body) : undefined,
     });
-    logger.debug('Parsed http signature', parsed);
+    if (result.isErr()) throw result.error;
 
-    // return { verified: false, parsed, reason: 'Invalid signature' };
+    logger.info('Verified http signature', { verified: result.value });
+    return { verified: result.value };
   } catch (err) {
     logger.debug('Failed to verify http signature', err);
+    return { verified: false, reason: err.message };
   }
-
-  return { verified: false, reason: 'Not implemented yet' };
 }
 
 function findPublicKey(scheme: SignatureScheme, keyId: string): KeyObject {
