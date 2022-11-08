@@ -7,6 +7,7 @@ import { makeRouter, middlewares, setRequestContext } from '@navch/http';
 
 import { AppConfig } from './config';
 import * as shorten from './shorten/shorten.handler';
+import * as vaultSecret from './vault/secret.handler';
 import * as influxdbModule from './telemetry/influxdb';
 import * as pusherAdapter from './subscription/pusher.adapter';
 import * as webhook from './webhook/webhook.handler';
@@ -42,6 +43,12 @@ export function buildHandler() {
       keepAlive: 5000,
       lazyConnect: true,
     }),
+    vault: new Redis(config.redisURI, {
+      keyPrefix: 'sandbox:memo:vault:',
+      showFriendlyErrorStack: true,
+      keepAlive: 5000,
+      lazyConnect: true,
+    }),
   };
 
   const pusher = new pusherAdapter.PusherConnectionPool();
@@ -61,6 +68,13 @@ export function buildHandler() {
     });
     router.use(middlewares.errorHandler({ logger: logger.child({ name: 'webhook' }), expose: true }));
     router.use('/api', setContext, makeRouter(webhook.handlers()).routes());
+  }
+  {
+    const setContext = setRequestContext(async () => {
+      return { logger, redis, pusher, influxdb };
+    });
+    router.use(middlewares.errorHandler({ logger: logger.child({ name: 'vault' }), expose: true }));
+    router.use('/api', setContext, makeRouter(vaultSecret.handlers()).routes());
   }
 
   return router;
