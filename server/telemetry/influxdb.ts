@@ -8,7 +8,7 @@ import { Logger } from '@navch/common';
 
 import { ConnectionPool } from '../interfaces/ConnectionPool';
 
-const ServiceLogger = Logger.child({ name: 'influxdb' });
+const ServiceLogger = new Logger({ name: 'influxdb' });
 
 export type InfluxPointBuilder = (p: Point) => Point;
 
