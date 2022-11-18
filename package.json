@@ -22,9 +22,9 @@
   "dependencies": {
     "@digitalbazaar/http-digest-header": "git+https://github.com/digitalbazaar/http-signature-header.git#9bc7f4956dd045325ccc31ae382c9ae5c2195710",
     "@influxdata/influxdb-client": "1.29.0",
-    "@navch/codec": "0.7.5-next.97",
-    "@navch/common": "0.7.5-next.97",
-    "@navch/http": "0.7.5-next.97",
+    "@navch/codec": "0.7.5-next.98",
+    "@navch/common": "0.7.5-next.98",
+    "@navch/http": "0.7.5-next.98",
     "bs58": "5.0.0",
     "common-tags": "1.8.2",
     "got": "11.8.2",
@@ -44,8 +44,8 @@
     "uuid": "8.3.2"
   },
   "devDependencies": {
-    "@navch/testing": "0.7.5-next.97",
-    "@navch/toolkit": "0.7.5-next.97",
+    "@navch/testing": "0.7.5-next.98",
+    "@navch/toolkit": "0.7.5-next.98",
     "@types/bs58": "4.0.1",
     "@types/common-tags": "1.8.1",
     "@types/got": "9.6.12",
