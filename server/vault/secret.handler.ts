@@ -35,8 +35,8 @@ const KeyScheme = {
 };
 
 const ExpiryScheme = {
-  initial: 86400, // 24h
-  refresh: 86400, // 24h
+  initial: 14 * 86400, // 24h
+  refresh: 14 * 86400, // 24h
 };
 
 /**
