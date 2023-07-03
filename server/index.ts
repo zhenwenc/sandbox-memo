@@ -24,6 +24,10 @@ export function buildHandler() {
   router.use(setRequestContext({ logger }));
   router.use(middlewares.fromCallback(requestLogger));
 
+  router.get('/api/healthz', ctx => {
+    ctx.body = { status: 'ok' };
+  });
+
   const redis = {
     shorten: new Redis(config.redisURI, {
       keyPrefix: 'sandbox:memo:shorten:',
