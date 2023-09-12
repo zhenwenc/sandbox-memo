@@ -43,6 +43,11 @@ export type PusherSendRequest<T> = {
   readonly event: string;
   readonly data: T;
 };
+
+export type PusherAuthRequest = {
+  readonly channel: WebhookChannel;
+};
+
 export async function publish<T>(pusher: Pusher, req: PusherSendRequest<T>): Promise<unknown> {
   const { channel, event, data } = req;
   try {
@@ -72,6 +77,22 @@ export class PusherConnectionPool extends ConnectionPool<PusherClientMetadata, P
     try {
       const pusher = this.getInstance(options);
       const res = await pusher.trigger(`private-${channel.id}`, event, data);
+      if (res.status !== HttpStatus.OK) {
+        throw new PusherPublishError('unexpected response status');
+      }
+      ServiceLogger.debug('Publish event to pusher');
+      return await res.json();
+    } catch (err) {
+      ServiceLogger.debug('Failed to publish event', { err });
+      throw new PusherPublishError(err);
+    }
+  }
+
+  async authorize(options: PusherClientMetadata, req: PusherAuthRequest): Promise<unknown> {
+    const { channel } = req;
+    try {
+      const pusher = this.getInstance(options);
+      const res = await pusher.authorizeChannel(`private-${channel.id}`);
       if (res.status !== HttpStatus.OK) {
         throw new PusherPublishError('unexpected response status');
       }
