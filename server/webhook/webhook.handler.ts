@@ -1,15 +1,14 @@
 import Redis from 'ioredis';
-import ms from 'ms';
 
 import * as t from '@navch/codec';
 import { sleep } from '@navch/common';
 import { makeHandler, makeHandlers } from '@navch/http';
 
 import * as pusherAdapter from '../subscription/pusher.adapter';
-import * as pusherRepo from '../subscription/pusher.repository';
 import * as webhookRepo from './webhook.repository';
 import * as influxdbModule from '../telemetry/influxdb';
 import * as signatures from './signature';
+import { WebhookMetadata } from './webhook.repository';
 import { schemes } from './scheme';
 
 const HandlerContext = t.type({
@@ -21,52 +20,22 @@ const HandlerContext = t.type({
   pusher: t.instanceOf(pusherAdapter.PusherConnectionPool),
 });
 
-const ChannelOptions = t.partial({
-  /**
-   * Defer responding callback requests, supports user friendly duration formats.
-   *
-   * This can be used to simulate slow service endpoint. Maximum allowed duration is 5 seconds.
-   */
-  defer: new t.Type<number, string, string>(
-    'DeferDuration',
-    (v): v is number => typeof v === 'number',
-    (u, c) => {
-      const duration = ms(u);
-      if (duration > 0 && duration <= 5000) {
-        return t.success(duration);
-      }
-      return t.failure(u, c, 'Invalid value, must not be greater than 5s');
-    },
-    String
-  ),
-  /**
-   * Optionally verify HTTP signature.
-   */
-  signature: signatures.SignatureScheme,
-  /**
-   * Optionally push telemetry data to InfluxDB.
-   */
-  influxdb: influxdbModule.ClientOptions,
-  /**
-   * Optionally push received data to Pusher.
-   */
-  pusher: pusherAdapter.ClientOptions,
-});
-
 const postChannelRegister = makeHandler({
   route: '/v1/webhook/channels',
   method: 'POST',
-  input: { body: ChannelOptions },
+  input: { body: WebhookMetadata },
   context: HandlerContext,
-  handle: async (_1, options, { redis, logger, request }) => {
+  handle: async (_1, metadata, { redis, logger, request }) => {
     const { protocol, host } = request;
+    logger.info('Register webhook channel', metadata);
 
-    logger.info('Register webhook channel', options);
-    const record = await pusherRepo.insert(redis.pusher, options);
-    return {
-      ...record,
-      callbackURL: `${protocol}://${host}/webhook/events/${record.id}`,
+    const channel = await webhookRepo.insert(redis.webhook, metadata);
+    const result = {
+      ...channel,
+      callbackURL: `${protocol}://${host}/webhook/events/${channel.id}`,
     };
+    logger.info('Registered webhook channel', result);
+    return result;
   },
 });
 
@@ -93,8 +62,8 @@ const postWebhookEvent = makeHandler({
     const { signature } = headers;
     logger.info('Received webhook event', { path, body, headers, signature });
 
-    const channel = channelId ? await pusherRepo.findById(redis.pusher, channelId) : undefined;
-    const metadata = channel ? t.validate(ChannelOptions, channel.metadata) : undefined;
+    const channel = channelId ? await webhookRepo.findById(redis.pusher, channelId) : undefined;
+    const metadata = channel ? t.validate(WebhookMetadata, channel.metadata) : undefined;
     const scheme = schemes.find(s => s.isEventBody(body));
 
     //

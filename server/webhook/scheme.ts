@@ -1,12 +1,12 @@
 import * as t from '@navch/codec';
 
 import { InfluxPointBuilder } from '../telemetry/influxdb';
-import { PusherChannel } from '../subscription/pusher.repository';
+import { WebhookChannel } from '../webhook/webhook.repository';
 import { mattrScheme } from './mattr.scheme';
 
 export type RequestContext<TBody> = {
   readonly body: TBody;
-  readonly channel: PusherChannel;
+  readonly channel: WebhookChannel;
 };
 
 export type EventScheme<TEvent extends t.Mixed, TPresentation extends t.Mixed> = {

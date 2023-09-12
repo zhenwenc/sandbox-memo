@@ -5,12 +5,12 @@ import { HttpStatus, AbstractError, Logger } from '@navch/common';
 
 import { AppConfig } from '../config';
 import { ConnectionPool } from '../interfaces/ConnectionPool';
-import { PusherChannel } from '../subscription/pusher.repository';
+import { WebhookChannel } from '../webhook/webhook.repository';
 
 const ServiceLogger = new Logger({ name: 'pusher' });
 
-export type ClientOptions = t.TypeOf<typeof ClientOptions>;
-export const ClientOptions = t.strict({
+export type PusherClientMetadata = t.TypeOf<typeof PusherClientMetadata>;
+export const PusherClientMetadata = t.strict({
   /**
    * Pusher server URI. Must be in format:
    *
@@ -39,7 +39,7 @@ export function forURL(uri: string): Pusher {
 }
 
 export type PusherSendRequest<T> = {
-  readonly channel: PusherChannel;
+  readonly channel: WebhookChannel;
   readonly event: string;
   readonly data: T;
 };
@@ -58,16 +58,16 @@ export async function publish<T>(pusher: Pusher, req: PusherSendRequest<T>): Pro
   }
 }
 
-export class PusherConnectionPool extends ConnectionPool<ClientOptions, Pusher> {
-  public initInstance(options: ClientOptions): Pusher {
+export class PusherConnectionPool extends ConnectionPool<PusherClientMetadata, Pusher> {
+  public initInstance(options: PusherClientMetadata): Pusher {
     return Pusher.forURL(options.url);
   }
 
-  async releaseInstance(_: ClientOptions, _client: Pusher) {
+  async releaseInstance(_: PusherClientMetadata, _client: Pusher) {
     // noop
   }
 
-  async publish<T>(options: ClientOptions, req: PusherSendRequest<T>): Promise<unknown> {
+  async publish<T>(options: PusherClientMetadata, req: PusherSendRequest<T>): Promise<unknown> {
     const { channel, event, data } = req;
     try {
       const pusher = this.getInstance(options);
