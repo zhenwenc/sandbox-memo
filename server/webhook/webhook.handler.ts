@@ -4,6 +4,7 @@ import * as t from '@navch/codec';
 import { sleep } from '@navch/common';
 import { makeHandler, makeHandlers } from '@navch/http';
 
+import config from '../config';
 import * as pusherAdapter from '../subscription/pusher.adapter';
 import * as webhookRepo from './webhook.repository';
 import * as influxdbModule from '../telemetry/influxdb';
@@ -32,7 +33,7 @@ const postChannelRegister = makeHandler({
     const channel = await webhookRepo.insert(redis.webhook, metadata);
     const result = {
       ...channel,
-      callbackURL: `${protocol}://${host}/webhook/events/${channel.id}`,
+      callbackURL: `${protocol}://${host}/${config.basePath}/webhook/events/${channel.id}`,
     };
     logger.info('Registered webhook channel', result);
     return result;

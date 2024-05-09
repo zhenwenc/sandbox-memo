@@ -5,7 +5,7 @@ import { compose, trim } from 'ramda';
 import { Logger } from '@navch/common';
 import { makeRouter, middlewares, setRequestContext } from '@navch/http';
 
-import { AppConfig } from './config';
+import config from './config';
 import * as shorten from './shorten/shorten.handler';
 import * as vaultSecret from './vault/secret.handler';
 import * as influxdbModule from './telemetry/influxdb';
@@ -13,7 +13,6 @@ import * as pusherAdapter from './subscription/pusher.adapter';
 import * as webhook from './webhook/webhook.handler';
 
 export function buildHandler() {
-  const config = new AppConfig();
   const logger = new Logger({ name: 'memo' });
 
   const requestLogger = morgan('dev', {

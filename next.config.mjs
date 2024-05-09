@@ -3,6 +3,19 @@
  */
 const nextConfig = {
   /**
+   * Deploy webapp under a sub-path for clear separation from provider.
+   */
+  basePath: '/memo',
+  /**
+   * Path mappings.
+   */
+  rewrites: async () => ({
+    fallback: [
+      { source: '/', destination: `/memo` },
+      { source: '/:path*', destination: `/api/:path*` },
+    ],
+  }),
+  /**
    * Built-in ESLint support.
    *
    * https://nextjs.org/docs/basic-features/eslint
