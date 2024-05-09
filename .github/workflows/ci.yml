@@ -95,7 +95,7 @@ jobs:
 
       - name: Deploy Preview
         if: github.event_name == 'push' && github.ref == 'refs/heads/next'
-        uses: amondnet/vercel-action@v19
+        uses: amondnet/vercel-action@v25
         with:
           vercel-token:      ${{ secrets.VERCEL_TOKEN }}
           vercel-org-id:     ${{ secrets.VERCEL_ORG_ID }}
@@ -105,7 +105,7 @@ jobs:
 
       - name: Deploy Production
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-        uses: amondnet/vercel-action@v19
+        uses: amondnet/vercel-action@v25
         with:
           vercel-token:      ${{ secrets.VERCEL_TOKEN }}
           vercel-org-id:     ${{ secrets.VERCEL_ORG_ID }}
