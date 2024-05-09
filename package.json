@@ -38,6 +38,7 @@
     "pino-logdna": "3.0.3",
     "pusher": "5.1.1-beta",
     "pusher-js": "7.3.0",
+    "query-string": "7.0.1",
     "ramda": "0.27.1",
     "react": "18.2.0",
     "react-dom": "18.2.0",
