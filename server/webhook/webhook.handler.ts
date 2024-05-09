@@ -63,7 +63,7 @@ const postWebhookEvent = makeHandler({
     const { signature } = headers;
     logger.info('Received webhook event', { path, body, headers, signature });
 
-    const channel = channelId ? await webhookRepo.findById(redis.pusher, channelId) : undefined;
+    const channel = channelId ? await webhookRepo.findById(redis.webhook, channelId) : undefined;
     const metadata = channel ? t.validate(WebhookMetadata, channel.metadata) : undefined;
     const scheme = schemes.find(s => s.isEventBody(body));
 
@@ -108,7 +108,26 @@ const postWebhookEvent = makeHandler({
       logger.debug(`Defer response for ${metadata.defer}ms`);
       await sleep(metadata.defer);
     }
+    //
+    // Cache the event
+    //
+    if (channel) {
+      logger.info('Persist webhook event', { channelId: channel.id, body });
+      await webhookRepo.insertWebhookEvent(redis.webhook, channel.id, body);
+    }
     return { status: 'Ok' };
+  },
+});
+
+const getWebhookEvent = makeHandler({
+  route: '/v1/webhook/events/:channelId',
+  method: 'GET',
+  input: { params: t.type({ channelId: t.string }) },
+  context: HandlerContext,
+  handle: async ({ channelId }, _2, { redis, logger }) => {
+    const record = await webhookRepo.findWebhookEventById(redis.webhook, channelId);
+    logger.info('Retrive webhook event', { channelId, record });
+    return record ?? {};
   },
 });
 
@@ -125,7 +144,7 @@ const postPresentationResponse = makeHandler({
       //
       if (scheme.isPresentationBody(body)) {
         logger.info('Persist presentation response');
-        await webhookRepo.insertPresentation(redis.webhook, scheme.presentation.uid(body), body);
+        await webhookRepo.insertWebhookEvent(redis.webhook, scheme.presentation.uid(body), body);
       }
     }
     return { status: 'OK' };
@@ -133,17 +152,19 @@ const postPresentationResponse = makeHandler({
 });
 
 const getPresentationResponse = makeHandler({
-  route: '/v1/webhook/presentations/:challengeId',
+  route: '/v1/webhook/presentations/:channelId',
   method: 'GET',
-  input: { params: t.type({ challengeId: t.string }) },
+  input: { params: t.type({ channelId: t.string }) },
   context: HandlerContext,
-  handle: async ({ challengeId }, _2, { redis }) => {
-    const record = await webhookRepo.findPresentationById(redis.webhook, challengeId);
-    return { value: record };
+  handle: async ({ channelId }, _2, { redis, logger }) => {
+    const record = await webhookRepo.findWebhookEventById(redis.webhook, channelId);
+    logger.info('Retrive presentation response', { channelId, record });
+    return record ?? {};
   },
 });
 
 export const handlers = makeHandlers(() => [
+  getWebhookEvent,
   postWebhookEvent,
   postChannelRegister,
   postPresentationResponse,

@@ -53,8 +53,8 @@ export const WebhookChannel = t.type({
   metadata: t.union([t.undefined, t.record(t.string, t.unknown)]),
 });
 
-export type PresentationRecord = t.TypeOf<typeof PresentationRecord>;
-export const PresentationRecord = t.type({
+export type WebhookEventRecord = t.TypeOf<typeof WebhookEventRecord>;
+export const WebhookEventRecord = t.type({
   id: t.string,
   receivedAt: t.number,
   data: t.unknown,
@@ -89,20 +89,20 @@ export async function findById(redis: Redis, channelId: string): Promise<Webhook
   return t.validate(WebhookChannel, JSON.parse(record));
 }
 
-export async function insertPresentation<T>(redis: Redis, id: string, data: T): Promise<T> {
-  const key = `presentation:${id}`;
+export async function insertWebhookEvent<T>(redis: Redis, id: string, data: T): Promise<T> {
+  const key = `webhook:event:${id}`;
   const record = { id, receivedAt: Date.now(), data };
   await redis.set(key, JSON.stringify(record), 'EX', 300);
   return record.data;
 }
 
-export async function findPresentationById(
+export async function findWebhookEventById(
   redis: Redis,
   id: string
-): Promise<PresentationRecord | undefined> {
-  const record = await redis.get(`presentation:${id}`);
+): Promise<WebhookEventRecord | undefined> {
+  const record = await redis.get(`webhook:event:${id}`);
   if (!record) {
     return undefined;
   }
-  return t.validate(PresentationRecord, JSON.parse(record));
+  return t.validate(WebhookEventRecord, JSON.parse(record));
 }
