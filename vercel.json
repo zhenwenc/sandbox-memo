@@ -1,0 +1,21 @@
+{
+  "version": 2,
+  "public": false,
+  "redirects": [
+    {
+      "source": "/:path((?!memo/)\\.well-known/.*)",
+      "destination": "/memo/api/:path*",
+      "permanent": false
+    },
+    {
+      "source": "/",
+      "destination": "/memo",
+      "permanent": false
+    }
+  ],
+  "github": {
+    "enabled": false
+  },
+  "installCommand": "yarn install --prod=false --force",
+  "buildCommand": "yarn build"
+}
