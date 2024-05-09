@@ -23,6 +23,7 @@ export const WebhookMetadata = t.partial({
     'DeferDuration',
     (v): v is number => typeof v === 'number',
     (u, c) => {
+      if (!u) return t.success(0);
       const duration = ms(u);
       if (duration > 0 && duration <= 5000) {
         return t.success(duration);
