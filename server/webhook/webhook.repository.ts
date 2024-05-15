@@ -15,6 +15,12 @@ const WEBHOOK_CHANNEL_TTL = 3600 * 120; // 5 days
 export type WebhookMetadata = t.TypeOf<typeof WebhookMetadata>;
 export const WebhookMetadata = t.partial({
   /**
+   * Optional preferred Channel ID, supports upsert operation.
+   *
+   * TODO Enforce valid UUID
+   */
+  id: t.union([t.undefined, t.string]),
+  /**
    * Defer responding callback requests, supports user friendly duration formats.
    *
    * This can be used to simulate slow service endpoint. Maximum allowed duration is 5 seconds.
@@ -61,7 +67,7 @@ export const WebhookEventRecord = t.type({
 });
 
 export async function insert(redis: Redis, metadata?: WebhookMetadata): Promise<WebhookChannel> {
-  const id = uuid.v4();
+  const id = metadata?.id ?? uuid.v4();
   const record = t.validate(WebhookChannel, { id, createdAt: Date.now(), metadata });
   await redis.set(record.id, JSON.stringify(record), 'EX', WEBHOOK_CHANNEL_TTL);
   return record;

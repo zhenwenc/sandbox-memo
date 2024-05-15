@@ -22,7 +22,7 @@ const HandlerContext = t.type({
 });
 
 const postChannelRegister = makeHandler({
-  route: '/v1/webhook/channels',
+  route: '/v1/webhook/channels/:channelId?',
   method: 'POST',
   input: { body: WebhookMetadata },
   context: HandlerContext,
