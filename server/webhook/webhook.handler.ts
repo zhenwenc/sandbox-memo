@@ -27,13 +27,14 @@ const postChannelRegister = makeHandler({
   input: { body: WebhookMetadata },
   context: HandlerContext,
   handle: async (_1, metadata, { redis, logger, request }) => {
-    const { protocol, host } = request;
+    const proto = request.get('x-forwarded-proto') || request.protocol;
+    const host = request.get('x-forwarded-host') || request.host;
     logger.info('Register webhook channel', metadata);
 
     const channel = await webhookRepo.insert(redis.webhook, metadata);
     const result = {
       ...channel,
-      callbackURL: `${protocol}://${host}/${config.basePath}/webhook/events/${channel.id}`,
+      callbackURL: `${proto}://${host}${config.basePath}/webhook/events/${channel.id}`,
     };
     logger.info('Registered webhook channel', result);
     return result;
