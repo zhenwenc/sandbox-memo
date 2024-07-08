@@ -35,6 +35,7 @@ const postChannelRegister = makeHandler({
     const result = {
       ...channel,
       callbackURL: `${proto}://${host}${config.basePath}/webhook/events/${channel.id}`,
+      webhookURL: `${proto}://${host}${config.basePath}/api/v1/webhook/events/${channel.id}`,
     };
     logger.info('Registered webhook channel', result);
     return result;

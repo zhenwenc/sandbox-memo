@@ -27,6 +27,9 @@ export default function CallbackScreen() {
       });
       if (resp.status === 200) {
         console.info('[CallbackScreen] Posted event to server', await resp.json());
+
+        // automatically close the current browser window
+        window.close();
       } else {
         console.info('[CallbackScreen] Failed to send event', { status: resp.status });
       }
