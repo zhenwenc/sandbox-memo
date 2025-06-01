@@ -16,7 +16,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repo
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
       - name: Check if commit contains files that should be ignored
         run: |
           git clone --depth 1 https://github.com/github/gitignore.git &&
@@ -33,26 +33,13 @@ jobs:
     needs: [check-ignored-files]
     steps:
       - name: Checkout repo
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
       - name: Setup NodeJS
-        uses: actions/setup-node@v1
+        uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION_USED_FOR_DEVELOPMENT }}
           registry-url: https://registry.npmjs.org
-
-      - name: Get Yarn cache directory path
-        id: yarn-cache-dir-path
-        run: echo "::set-output name=dir::$(yarn cache dir)"
-
-      - name: Cache Node modules
-        uses: actions/cache@v2
-        with:
-          path: ${{ steps.yarn-cache-dir-path.outputs.dir }}
-          key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-yarn-
-            ${{ runner.os }}-
 
       - name: Install dependencies
         run: yarn --frozen-lockfile
@@ -69,26 +56,13 @@ jobs:
     needs: [check-ignored-files] # TODO required passing test
     steps:
       - name: Checkout repo
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
       # - name: Setup NodeJS
-      #   uses: actions/setup-node@v1
+      #   uses: actions/setup-node@v4
       #   with:
       #     node-version: ${{ env.NODE_VERSION_USED_FOR_DEVELOPMENT }}
       #     registry-url: https://registry.npmjs.org
-
-      # - name: Get Yarn cache directory path
-      #   id: yarn-cache-dir-path
-      #   run: echo "::set-output name=dir::$(yarn cache dir)"
-
-      # - name: Cache Node modules
-      #   uses: actions/cache@v2
-      #   with:
-      #     path: ${{ steps.yarn-cache-dir-path.outputs.dir }}
-      #     key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
-      #     restore-keys: |
-      #       ${{ runner.os }}-yarn-
-      #       ${{ runner.os }}-
 
       # - name: Install dependencies
       #   run: yarn --frozen-lockfile --force
