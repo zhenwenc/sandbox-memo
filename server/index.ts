@@ -28,25 +28,25 @@ export function buildHandler() {
   });
 
   const redis = {
-    shorten: new Redis(config.redisURI, {
+    shorten: new Redis(config.redisURL, {
       keyPrefix: 'sandbox:memo:shorten:',
       showFriendlyErrorStack: true,
       keepAlive: 5000,
       lazyConnect: true,
     }),
-    pusher: new Redis(config.redisURI, {
+    pusher: new Redis(config.redisURL, {
       keyPrefix: 'sandbox:memo:pusher:',
       showFriendlyErrorStack: true,
       keepAlive: 5000,
       lazyConnect: true,
     }),
-    webhook: new Redis(config.redisURI, {
+    webhook: new Redis(config.redisURL, {
       keyPrefix: 'sandbox:memo:webhook:',
       showFriendlyErrorStack: true,
       keepAlive: 5000,
       lazyConnect: true,
     }),
-    vault: new Redis(config.redisURI, {
+    vault: new Redis(config.redisURL, {
       keyPrefix: 'sandbox:memo:vault:',
       showFriendlyErrorStack: true,
       keepAlive: 5000,

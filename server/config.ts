@@ -5,7 +5,7 @@ export class AppConfig extends BaseConfig {
   readonly port = this.readNumber('PORT', 3000);
   readonly basePath = this.read('BASE_PATH', '/memo');
 
-  readonly redisURI = this.read('REDIS_URI');
+  readonly redisURL = this.read('REDIS_URL');
   readonly pusherURI = this.read('PUSHER_URI', null);
 
   readonly vercelURL = Option.from(this.read('VERCEL_URL', null));
